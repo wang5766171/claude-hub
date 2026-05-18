@@ -1,5 +1,14 @@
+mod app;
+mod config;
+mod event;
+mod project;
+mod session;
+mod history;
+mod keybind;
+mod ui;
+
+use app::App;
 use crossterm::{
-    event::{self, Event, KeyCode},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
@@ -12,22 +21,15 @@ fn main() -> io::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    loop {
-        terminal.draw(|f| {
-            let size = f.area();
-            let block = ratatui::widgets::Block::default()
-                .title("Claude Hub")
-                .borders(ratatui::widgets::Borders::ALL);
-            let paragraph = ratatui::widgets::Paragraph::new("Press q to quit")
-                .block(block);
-            f.render_widget(paragraph, size);
-        })?;
+    let mut app = App::new();
+    app.load();
 
-        if event::poll(std::time::Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    break;
-                }
+    while !app.should_quit {
+        terminal.draw(|f| ui::render(f, &app))?;
+
+        if crossterm::event::poll(std::time::Duration::from_millis(100))? {
+            if let crossterm::event::Event::Key(key) = crossterm::event::read()? {
+                app.handle_key(key);
             }
         }
     }
