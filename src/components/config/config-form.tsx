@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ interface ConfigFormProps {
 }
 
 export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<ClaudeConfig>(initialConfig);
   const [saving, setSaving] = useState(false);
   const [newEnvKey, setNewEnvKey] = useState("");
@@ -80,23 +82,23 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Configuration</h3>
+        <h3 className="text-lg font-semibold">{t("config.configuration")}</h3>
         <Button onClick={handleSave} disabled={!hasChanges || saving} size="sm">
           <Save className="mr-2 h-4 w-4" />
-          {saving ? "Saving..." : "Save"}
+          {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
 
       {/* Model */}
       <div className="space-y-2">
-        <Label htmlFor="model">Model</Label>
+        <Label htmlFor="model">{t("config.model")}</Label>
         <select
           id="model"
           value={config.model || ""}
           onChange={(e) => handleModelChange(e.target.value)}
           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          <option value="">Default</option>
+          <option value="">{t("common.default")}</option>
           {MODEL_OPTIONS.map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
@@ -105,7 +107,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
 
       {/* Environment Variables */}
       <div className="space-y-2">
-        <Label>Environment Variables</Label>
+        <Label>{t("config.envVars")}</Label>
         <div className="space-y-2">
           {Object.entries(config.env || {}).map(([key, value]) => (
             <div key={key} className="flex items-center gap-2">
@@ -114,7 +116,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
                 value={value}
                 onChange={(e) => handleEnvChange(key, e.target.value)}
                 className="flex-1"
-                placeholder="Value"
+                placeholder={t("config.value")}
               />
               <Button variant="ghost" size="icon-xs" onClick={() => handleEnvDelete(key)}>
                 <Trash2 className="h-3 w-3" />
@@ -126,12 +128,12 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
               value={newEnvKey}
               onChange={(e) => setNewEnvKey(e.target.value)}
               className="min-w-[140px]"
-              placeholder="KEY"
+              placeholder={t("config.key")}
               onKeyDown={(e) => e.key === "Enter" && handleAddEnv()}
             />
             <Button variant="outline" size="sm" onClick={handleAddEnv} disabled={!newEnvKey.trim()}>
               <Plus className="mr-1 h-3 w-3" />
-              Add
+              {t("common.add")}
             </Button>
           </div>
         </div>
@@ -139,7 +141,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
 
       {/* Enabled Plugins */}
       <div className="space-y-2">
-        <Label>Enabled Plugins</Label>
+        <Label>{t("config.enabledPlugins")}</Label>
         <div className="space-y-2">
           {Object.entries(config.enabledPlugins || {}).map(([plugin, enabled]) => (
             <div key={plugin} className="flex items-center justify-between rounded-md border px-3 py-2">
@@ -153,7 +155,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
             </div>
           ))}
           {(!config.enabledPlugins || Object.keys(config.enabledPlugins).length === 0) && (
-            <p className="text-sm text-muted-foreground">No plugins configured</p>
+            <p className="text-sm text-muted-foreground">{t("config.noPlugins")}</p>
           )}
         </div>
       </div>
@@ -161,8 +163,8 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
       {/* Skip Dangerous Mode Permission Prompt */}
       <div className="flex items-center justify-between rounded-md border px-3 py-3">
         <div className="space-y-0.5">
-          <Label>Skip Dangerous Mode Permission Prompt</Label>
-          <p className="text-xs text-muted-foreground">Auto-approve dangerous operations without confirmation</p>
+          <Label>{t("config.skipDangerous")}</Label>
+          <p className="text-xs text-muted-foreground">{t("config.skipDangerousDesc")}</p>
         </div>
         <Switch
           checked={config.skipDangerousModePermissionPrompt === true}

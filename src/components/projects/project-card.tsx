@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { Project } from "@/types";
 
 interface ProjectCardProps {
@@ -10,6 +11,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
+  const { t } = useTranslation();
   return (
     <Card
       className={cn(
@@ -25,7 +27,7 @@ export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
             <h3 className="font-medium">{project.name}</h3>
           </div>
           {project.has_claude_md && (
-            <FileText className="h-4 w-4 text-green-500" title="Has CLAUDE.md" />
+            <FileText className="h-4 w-4 text-green-500" title={t("projects.hasClaudeMd")} />
           )}
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground" title={project.path}>
@@ -34,7 +36,7 @@ export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
         <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
-            {project.session_count} sessions
+            {t("projects.sessionCount", { count: project.session_count })}
           </span>
           {project.last_active && <span>{project.last_active}</span>}
         </div>

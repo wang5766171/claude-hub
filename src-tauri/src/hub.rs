@@ -63,6 +63,7 @@ pub fn delete_session_name(session_id: String) -> Result<(), Box<dyn std::error:
 pub struct AppState {
     pub last_page: Option<String>,
     pub last_project: Option<String>,
+    pub language: Option<String>,
 }
 
 fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -72,7 +73,7 @@ fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
 pub fn load_state() -> Result<AppState, Box<dyn std::error::Error>> {
     let path = state_path()?;
     if !path.exists() {
-        return Ok(AppState { last_page: None, last_project: None });
+        return Ok(AppState { last_page: None, last_project: None, language: None });
     }
     read_json(&path)
 }
@@ -80,6 +81,17 @@ pub fn load_state() -> Result<AppState, Box<dyn std::error::Error>> {
 pub fn save_state(state: &AppState) -> Result<(), Box<dyn std::error::Error>> {
     let path = state_path()?;
     write_json(&path, state)
+}
+
+pub fn load_language() -> Result<Option<String>, Box<dyn std::error::Error>> {
+    let state = load_state()?;
+    Ok(state.language)
+}
+
+pub fn save_language(lang: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = load_state().unwrap_or(AppState { last_page: None, last_project: None, language: None });
+    state.language = Some(lang.to_string());
+    save_state(&state)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

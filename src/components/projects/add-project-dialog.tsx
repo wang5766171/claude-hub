@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { invokeCommand } from "@/hooks/use-invoke";
+import { useTranslation } from "react-i18next";
 import type { Project } from "@/types";
 
 interface AddProjectDialogProps {
@@ -12,6 +13,7 @@ interface AddProjectDialogProps {
 }
 
 export function AddProjectDialog({ open, onOpenChange, onAdded }: AddProjectDialogProps) {
+  const { t } = useTranslation();
   const [path, setPath] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,11 +38,11 @@ export function AddProjectDialog({ open, onOpenChange, onAdded }: AddProjectDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Project</DialogTitle>
+          <DialogTitle>{t("projects.addProjectTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Input
-            placeholder="D:\MyCodes\my-project"
+            placeholder={t("projects.projectPathPlaceholder")}
             value={path}
             onChange={(e) => setPath(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -48,9 +50,9 @@ export function AddProjectDialog({ open, onOpenChange, onAdded }: AddProjectDial
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={loading || !path.trim()}>
-            Add
+            {t("common.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

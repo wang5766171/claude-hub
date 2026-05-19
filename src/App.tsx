@@ -1,12 +1,15 @@
 import { useState } from "react";
+import "@/i18n";
 import { AppLayout } from "@/components/layout/app-layout";
 import { ProjectsPage } from "@/pages/projects-page";
 import { SessionsPage } from "@/pages/sessions-page";
 import { ConfigPage } from "@/pages/config-page";
 import { useInvoke } from "@/hooks/use-invoke";
+import { useTranslation } from "react-i18next";
 import type { Page, Project, ClaudeConfig } from "@/types";
 
 function App() {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState<Page>("projects");
   const [initialProject, setInitialProject] = useState<string | null>(null);
   const { data: projects } = useInvoke<Project[]>("scan_projects");
@@ -35,7 +38,7 @@ function App() {
       )}
       {currentPage === "config" && <ConfigPage />}
       {currentPage === "commands" && (
-        <div className="text-muted-foreground">Commands coming in P3</div>
+        <div className="text-muted-foreground">{t("commands.comingSoon")}</div>
       )}
     </AppLayout>
   );

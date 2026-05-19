@@ -1,0 +1,87 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "add": "Add",
+    "saving": "Saving...",
+    "default": "default",
+    "yes": "Yes",
+    "no": "No",
+    "na": "N/A"
+  },
+  "nav": {
+    "projects": "Projects",
+    "sessions": "Sessions",
+    "config": "Config",
+    "commands": "Commands"
+  },
+  "status": {
+    "model": "Model: {{model}}",
+    "projects": "Projects: {{count}}"
+  },
+  "projects": {
+    "title": "Projects",
+    "addProject": "Add Project",
+    "noProjects": "No projects found",
+    "noProjectsDesc": "Add a project with a .claude directory to get started",
+    "hasClaudeMd": "Has CLAUDE.md",
+    "sessionCount": "{{count}} sessions",
+    "path": "Path:",
+    "sessions": "Sessions",
+    "lastActive": "Last Active",
+    "claudeMd": "CLAUDE.md",
+    "viewSessions": "View Sessions",
+    "openInTerminal": "Open in Terminal",
+    "addProjectTitle": "Add Project",
+    "projectPathPlaceholder": "D:\\MyCodes\\my-project"
+  },
+  "sessions": {
+    "projects": "Projects",
+    "selectProject": "Select a project",
+    "title": "Sessions",
+    "selectSession": "Select a session to view messages",
+    "msgCount": "{{count}} msg",
+    "user": "User",
+    "assistant": "Assistant",
+    "renameTitle": "Rename Session",
+    "renamePlaceholder": "Enter session name (leave empty to reset)",
+    "sessionId": "Session ID: "
+  },
+  "config": {
+    "title": "Configuration",
+    "editConfig": "Edit Config",
+    "presets": "Presets",
+    "backups": "Backups",
+    "export": "Export",
+    "import": "Import",
+    "loadFailed": "Failed to load configuration",
+    "configuration": "Configuration",
+    "model": "Model",
+    "envVars": "Environment Variables",
+    "value": "Value",
+    "key": "KEY",
+    "enabledPlugins": "Enabled Plugins",
+    "noPlugins": "No plugins configured",
+    "skipDangerous": "Skip Dangerous Mode Permission Prompt",
+    "skipDangerousDesc": "Auto-approve dangerous operations without confirmation",
+    "presetDesc": "Save current config as a preset for quick switching between configurations.",
+    "saveAsPreset": "Save Current as Preset",
+    "noPresets": "No presets yet",
+    "noPresetsDesc": "Save your current configuration as a preset to get started",
+    "created": "Created {{date}}",
+    "apply": "Apply",
+    "savePresetTitle": "Save Preset",
+    "presetName": "Preset Name",
+    "presetNamePlaceholder": "e.g., Sonnet Development",
+    "backupDesc": "Backups are created automatically before each config save. Click restore to revert to a previous configuration.",
+    "noBackups": "No backups yet",
+    "noBackupsDesc": "Backups are created automatically when you save configuration changes",
+    "restoring": "Restoring...",
+    "restore": "Restore",
+    "loadingPresets": "Loading presets...",
+    "loadingBackups": "Loading backups..."
+  },
+  "commands": {
+    "comingSoon": "Commands coming in P3"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Plus, FolderOpen } from "lucide-react";
 import { useInvoke } from "@/hooks/use-invoke";
@@ -13,6 +14,7 @@ interface ProjectsPageProps {
 }
 
 export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
+  const { t } = useTranslation();
   const { data: projects, loading, refetch } = useInvoke<Project[]>("scan_projects");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -37,18 +39,18 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Projects</h2>
+        <h2 className="text-xl font-semibold">{t("projects.title")}</h2>
         <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Project
+          {t("projects.addProject")}
         </Button>
       </div>
 
       {!projects || projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FolderOpen className="h-12 w-12 mb-4" />
-          <p>No projects found</p>
-          <p className="text-sm">Add a project with a .claude directory to get started</p>
+          <p>{t("projects.noProjects")}</p>
+          <p className="text-sm">{t("projects.noProjectsDesc")}</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

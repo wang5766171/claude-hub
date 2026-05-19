@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { ConfigForm } from "@/components/config/config-form";
 import { PresetManager } from "@/components/config/preset-manager";
@@ -10,6 +11,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { ClaudeConfig } from "@/types";
 
 export function ConfigPage() {
+  const { t } = useTranslation();
   const { data: config, loading, refetch } = useInvoke<ClaudeConfig>("load_config");
   const [activeTab, setActiveTab] = useState<"edit" | "presets" | "backups">("edit");
 
@@ -51,27 +53,27 @@ export function ConfigPage() {
   }
 
   if (!config) {
-    return <div className="text-muted-foreground">Failed to load configuration</div>;
+    return <div className="text-muted-foreground">{t("config.loadFailed")}</div>;
   }
 
   const tabs = [
-    { key: "edit" as const, label: "Edit Config" },
-    { key: "presets" as const, label: "Presets" },
-    { key: "backups" as const, label: "Backups" },
+    { key: "edit" as const, label: t("config.editConfig") },
+    { key: "presets" as const, label: t("config.presets") },
+    { key: "backups" as const, label: t("config.backups") },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Configuration</h2>
+        <h2 className="text-xl font-semibold">{t("config.title")}</h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            {t("config.export")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleImport}>
             <Upload className="mr-2 h-4 w-4" />
-            Import
+            {t("config.import")}
           </Button>
         </div>
       </div>

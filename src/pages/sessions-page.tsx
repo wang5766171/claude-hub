@@ -4,6 +4,7 @@ import { SessionList } from "@/components/sessions/session-list";
 import { SessionDetail } from "@/components/sessions/session-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Session, Project, Message } from "@/types";
 
 interface SessionsPageProps {
@@ -12,6 +13,7 @@ interface SessionsPageProps {
 }
 
 export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPageProps) {
+  const { t } = useTranslation();
   const { data: projects, loading: projectsLoading } = useInvoke<Project[]>("scan_projects");
   const { data: sessionNames, refetch: refetchNames } = useInvoke<Record<string, string>>("get_session_names");
 
@@ -58,7 +60,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     <div className="flex h-[calc(100vh-5rem)] gap-4">
       {/* Project selector */}
       <div className="w-48 shrink-0 space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground">Projects</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">{t("sessions.projects")}</h3>
         <div className="space-y-1">
           {projects?.filter((p) => p.session_count > 0).map((project) => (
             <button
@@ -84,7 +86,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
         {!selectedProject ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <MessageSquare className="h-8 w-8 mb-2" />
-            <p className="text-sm">Select a project</p>
+            <p className="text-sm">{t("sessions.selectProject")}</p>
           </div>
         ) : selectedSession && currentSession ? (
           <SessionDetail
@@ -96,7 +98,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
           />
         ) : (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground">Sessions</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">{t("sessions.title")}</h3>
             {sessions && sessionNames && (
               <SessionList
                 sessions={sessions}
@@ -112,7 +114,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
       {/* Empty state for message area */}
       {!selectedSession && (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <p>Select a session to view messages</p>
+          <p>{t("sessions.selectSession")}</p>
         </div>
       )}
     </div>

@@ -115,6 +115,16 @@ fn import_config(path: String) -> Result<config::ClaudeConfig, String> {
     config::import_config(&path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn load_language() -> Result<Option<String>, String> {
+    hub::load_language().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_language(lang: String) -> Result<(), String> {
+    hub::save_language(&lang).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -139,6 +149,8 @@ pub fn run() {
             restore_backup,
             export_config,
             import_config,
+            load_language,
+            save_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

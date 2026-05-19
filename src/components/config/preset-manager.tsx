@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ interface PresetManagerProps {
 }
 
 export function PresetManager({ onApplied }: PresetManagerProps) {
+  const { t } = useTranslation();
   const { data: presets, loading, refetch } = useInvoke<Preset[]>("list_presets");
   const { data: currentConfig } = useInvoke<ClaudeConfig>("load_config");
   const [createOpen, setCreateOpen] = useState(false);
@@ -65,25 +67,25 @@ export function PresetManager({ onApplied }: PresetManagerProps) {
   };
 
   if (loading) {
-    return <div className="text-muted-foreground">Loading presets...</div>;
+    return <div className="text-muted-foreground">{t("config.loadingPresets")}</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Save current config as a preset for quick switching between configurations.
+          {t("config.presetDesc")}
         </p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Save Current as Preset
+          {t("config.saveAsPreset")}
         </Button>
       </div>
 
       {!presets || presets.length === 0 ? (
         <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
-          <p>No presets yet</p>
-          <p className="text-sm">Save your current configuration as a preset to get started</p>
+          <p>{t("config.noPresets")}</p>
+          <p className="text-sm">{t("config.noPresetsDesc")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -96,16 +98,16 @@ export function PresetManager({ onApplied }: PresetManagerProps) {
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{preset.name}</span>
                   <Badge variant="secondary" className="text-xs">
-                    {preset.config.model || "default"}
+                    {preset.config.model || t("common.default")}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Created {new Date(preset.createdAt).toLocaleString()}
+                  {t("config.created", { date: new Date(preset.createdAt).toLocaleString() })}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleApply(preset.id)}>
-                  Apply
+                  {t("config.apply")}
                 </Button>
                 <Button variant="ghost" size="icon-xs" onClick={() => handleDelete(preset.id)}>
                   <Trash2 className="h-3 w-3" />
@@ -119,26 +121,26 @@ export function PresetManager({ onApplied }: PresetManagerProps) {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Preset</DialogTitle>
+            <DialogTitle>{t("config.savePresetTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="preset-name">Preset Name</Label>
+              <Label htmlFor="preset-name">{t("config.presetName")}</Label>
               <Input
                 id="preset-name"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
-                placeholder="e.g., Sonnet Development"
+                placeholder={t("config.presetNamePlaceholder")}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={!presetName.trim() || saving}>
-              {saving ? "Saving..." : "Save Preset"}
+              {saving ? t("common.saving") : t("config.savePresetTitle")}
             </Button>
           </DialogFooter>
         </DialogContent>

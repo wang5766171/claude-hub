@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { User, Bot } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Message } from "@/types";
 
 interface MessageViewProps {
@@ -13,6 +14,7 @@ function formatTimestamp(ts: number | null): string {
 }
 
 export function MessageView({ messages }: MessageViewProps) {
+  const { t } = useTranslation();
   return (
     <ScrollArea className="h-full">
       <div className="space-y-4 p-4">
@@ -29,7 +31,7 @@ export function MessageView({ messages }: MessageViewProps) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium">
-                  {msg.role === "human" ? "User" : "Assistant"}
+                  {msg.role === "human" ? t("sessions.user") : t("sessions.assistant")}
                 </span>
                 {msg.timestamp && (
                   <span className="text-xs text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>

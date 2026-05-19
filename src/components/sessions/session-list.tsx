@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MessageSquare, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Session } from "@/types";
 
 interface SessionListProps {
@@ -10,6 +11,7 @@ interface SessionListProps {
 }
 
 export function SessionList({ sessions, sessionNames, selectedId, onSelect }: SessionListProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1">
       {sessions.map((session) => {
@@ -37,7 +39,7 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect }: Se
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs shrink-0 ml-2">
-              <span>{session.messages.length} msg</span>
+              <span>{t("sessions.msgCount", { count: session.messages.length })}</span>
               {session.started_at && (
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />

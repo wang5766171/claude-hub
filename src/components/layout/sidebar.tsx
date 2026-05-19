@@ -1,5 +1,6 @@
 import { FolderOpen, MessageSquare, Settings, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { Page } from "@/types";
 
 interface SidebarProps {
@@ -7,14 +8,15 @@ interface SidebarProps {
   onNavigate: (page: Page) => void;
 }
 
-const navItems: { page: Page; icon: typeof FolderOpen; label: string }[] = [
-  { page: "projects", icon: FolderOpen, label: "Projects" },
-  { page: "sessions", icon: MessageSquare, label: "Sessions" },
-  { page: "config", icon: Settings, label: "Config" },
-  { page: "commands", icon: Rocket, label: "Commands" },
+const navItems: { page: Page; icon: typeof FolderOpen; labelKey: string }[] = [
+  { page: "projects", icon: FolderOpen, labelKey: "nav.projects" },
+  { page: "sessions", icon: MessageSquare, labelKey: "nav.sessions" },
+  { page: "config", icon: Settings, labelKey: "nav.config" },
+  { page: "commands", icon: Rocket, labelKey: "nav.commands" },
 ];
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+  const { t } = useTranslation();
   return (
     <aside className="flex w-52 flex-col border-r border-border bg-card">
       <div className="border-b border-border p-4">
@@ -22,7 +24,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         <p className="text-xs text-muted-foreground">v0.1.0</p>
       </div>
       <nav className="flex-1 p-2">
-        {navItems.map(({ page, icon: Icon, label }) => (
+        {navItems.map(({ page, icon: Icon, labelKey }) => (
           <button
             key={page}
             onClick={() => onNavigate(page)}
@@ -34,7 +36,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             )}
           >
             <Icon className="h-4 w-4" />
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </nav>
