@@ -1,0 +1,5 @@
+# Obsidian 根目录物理路径
+OBSIDIAN_ROOT=D:\Obsidian
+
+# 项目在 Obsidian\graphify 下的分类子路径
+PROJECT_CATEGORY=个人项目\Claude Hub

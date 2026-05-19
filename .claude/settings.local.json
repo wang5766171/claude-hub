@@ -1,10 +1,13 @@
 {
   "permissions": {
+	"defaultMode": "bypassPermissions",
     "allow": [
       "Bash(cargo build)",
       "Bash(cargo test)",
       "Bash(cargo run)",
-      "Bash(cargo check)"
+      "Bash(cargo check)",
+      "Bash(python -c \"import graphify\")",
+      "Bash(echo \"exit_code=$?\")"
     ]
   }
 }
