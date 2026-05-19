@@ -1,8 +1,5 @@
-mod app;
-mod event;
-mod ui;
-
-use app::App;
+use claude_hub::app::App;
+use claude_hub::ui;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };

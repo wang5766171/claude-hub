@@ -1,5 +1,5 @@
-use claude_hub::config::ClaudeConfig;
-use claude_hub::project::Project;
+use crate::config::ClaudeConfig;
+use crate::project::Project;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mode {
@@ -33,8 +33,8 @@ impl App {
     }
 
     pub fn load(&mut self) {
-        self.projects = claude_hub::project::scan_projects();
-        self.config = claude_hub::config::load_config().ok();
+        self.projects = crate::project::scan_projects();
+        self.config = crate::config::load_config().ok();
     }
 
     pub fn handle_key(&mut self, key: crossterm::event::KeyEvent) {
