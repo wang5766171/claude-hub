@@ -75,6 +75,45 @@ pub fn decode_project_path(encoded: &str) -> String {
     }
 }
 
+pub fn encode_project_path(path: &str) -> String {
+    let with_drive = path.replace(':', "").replace('\\', "-").replace('/', "-");
+    with_drive
+}
+
+pub fn add_project(path: &str) -> Option<Project> {
+    let project_path = Path::new(path);
+    if !project_path.join(".claude").exists() {
+        return None;
+    }
+
+    let name = project_path.file_name()?.to_string_lossy().to_string();
+    let encoded = encode_project_path(path);
+
+    let home = dirs::home_dir()?;
+    let claude_project_dir = home.join(".claude").join("projects").join(&encoded);
+
+    let session_count = if claude_project_dir.exists() {
+        count_sessions(&claude_project_dir)
+    } else {
+        0
+    };
+
+    let last_active = if claude_project_dir.exists() {
+        get_last_active(&claude_project_dir)
+    } else {
+        None
+    };
+
+    Some(Project {
+        name,
+        path: project_path.to_path_buf(),
+        encoded_name: encoded,
+        session_count,
+        last_active,
+        has_claude_md: project_path.join(".claude").join("CLAUDE.md").exists(),
+    })
+}
+
 fn count_sessions(dir: &Path) -> usize {
     std::fs::read_dir(dir)
         .map(|entries| entries.filter_map(|e| e.ok()).filter(|e| {

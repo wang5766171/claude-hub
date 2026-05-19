@@ -117,6 +117,33 @@ impl App {
             return;
         }
 
+        if self.mode == Mode::AddProjectInput {
+            match key.code {
+                KeyCode::Enter => {
+                    let path = self.input_buffer.trim().to_string();
+                    if std::path::Path::new(&path).join(".claude").exists() {
+                        if let Some(project) = crate::project::add_project(&path) {
+                            self.projects.push(project);
+                        }
+                    }
+                    self.input_buffer.clear();
+                    self.mode = Mode::ProjectList;
+                }
+                KeyCode::Esc => {
+                    self.input_buffer.clear();
+                    self.mode = Mode::ProjectList;
+                }
+                KeyCode::Char(c) => {
+                    self.input_buffer.push(c);
+                }
+                KeyCode::Backspace => {
+                    self.input_buffer.pop();
+                }
+                _ => {}
+            }
+            return;
+        }
+
         match key.code {
             KeyCode::Char('q') | KeyCode::Char('Q') => {
                 self.should_quit = true;
@@ -147,6 +174,19 @@ impl App {
             KeyCode::Enter => self.handle_enter(),
             KeyCode::Char('m') if self.mode == Mode::GlobalConfig => {
                 self.mode = Mode::ConfigEditor;
+            }
+            KeyCode::Char('a') if self.mode == Mode::ProjectList => {
+                self.mode = Mode::AddProjectInput;
+                self.input_buffer.clear();
+            }
+            KeyCode::Char('d') if self.mode == Mode::ProjectDetail => {
+                if let Some(idx) = self.selected_project {
+                    if idx < self.projects.len() {
+                        self.projects.remove(idx);
+                        self.selected_project = None;
+                        self.mode = Mode::ProjectList;
+                    }
+                }
             }
             _ => {}
         }
