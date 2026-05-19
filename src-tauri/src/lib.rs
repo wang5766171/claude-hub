@@ -18,8 +18,8 @@ fn add_project(path: String) -> Result<project::Project, String> {
 }
 
 #[tauri::command]
-fn remove_project(_encoded_name: String) -> Result<(), String> {
-    Ok(())
+fn remove_project(encoded_name: String) -> Result<(), String> {
+    hub::hide_project(&encoded_name).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

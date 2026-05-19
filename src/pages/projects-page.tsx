@@ -37,7 +37,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 h-full overflow-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t("projects.title")}</h2>
         <Button onClick={() => setAddDialogOpen(true)}>
@@ -70,6 +70,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
           project={selectedProject}
           onClose={() => setSelectedProject(null)}
           onViewSessions={(name) => onViewSessions?.(name)}
+          onRemoved={() => { setSelectedProject(null); refetch(); }}
         />
       )}
 

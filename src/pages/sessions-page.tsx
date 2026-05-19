@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { SessionList } from "@/components/sessions/session-list";
-import { SessionDetail } from "@/components/sessions/session-detail";
+import { MessageView } from "@/components/sessions/message-view";
+import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MessageSquare, Pencil, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Session, Project, Message } from "@/types";
+import { searchSessions } from "@/lib/session-search";
+import type { Session, Project, Message, SessionSearchResult } from "@/types";
 
 interface SessionsPageProps {
   initialProject?: string | null;
@@ -19,17 +23,24 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
 
   const [selectedProject, setSelectedProject] = useState<string | null>(initialProject ?? null);
 
-  // Consume initial project after first render
   if (initialProject && onConsumedInitial) {
     onConsumedInitial();
   }
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
 
   const { data: sessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
     selectedProject ? { encodedName: selectedProject } : undefined
   );
+
+  const searchResults = useMemo<SessionSearchResult[]>(() => {
+    if (!sessions || !activeSearchQuery.trim()) return [];
+    return searchSessions(sessions, activeSearchQuery);
+  }, [sessions, activeSearchQuery]);
 
   const handleSelectSession = async (sessionId: string) => {
     setSelectedSession(sessionId);
@@ -42,9 +53,12 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     }
   };
 
-  const handleBack = () => {
+  const handleSelectProject = (encodedName: string) => {
+    setSelectedProject(encodedName);
     setSelectedSession(null);
     setSessionMessages([]);
+    setGlobalSearchQuery("");
+    setActiveSearchQuery("");
   };
 
   if (projectsLoading) {
@@ -57,19 +71,17 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     : "";
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] gap-4">
-      {/* Project selector */}
-      <div className="w-48 shrink-0 space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground">{t("sessions.projects")}</h3>
-        <div className="space-y-1">
+    <div className="h-full overflow-x-auto">
+      <div className="flex h-full min-w-[780px]">
+      {/* Column 1: Project selector */}
+      <div className="w-48 shrink-0 border-r border-border overflow-hidden flex flex-col">
+        <h3 className="text-sm font-medium text-muted-foreground px-2 py-2">{t("sessions.projects")}</h3>
+        <div className="space-y-0.5 overflow-y-auto flex-1">
           {projects?.filter((p) => p.session_count > 0).map((project) => (
             <button
               key={project.encoded_name}
-              onClick={() => {
-                setSelectedProject(project.encoded_name);
-                setSelectedSession(null);
-              }}
-              className={`block w-full rounded px-2 py-1 text-left text-sm truncate ${
+              onClick={() => handleSelectProject(project.encoded_name)}
+              className={`block w-full rounded px-2 py-1.5 text-left text-sm truncate ${
                 selectedProject === project.encoded_name
                   ? "bg-accent font-medium"
                   : "text-muted-foreground hover:bg-accent/50"
@@ -81,42 +93,87 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
         </div>
       </div>
 
-      {/* Session list or detail */}
-      <div className="w-80 shrink-0 border-l border-border pl-4">
+      {/* Column 2: Session list */}
+      <div className="w-72 shrink-0 border-r border-border flex flex-col">
         {!selectedProject ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <MessageSquare className="h-8 w-8 mb-2" />
             <p className="text-sm">{t("sessions.selectProject")}</p>
           </div>
-        ) : selectedSession && currentSession ? (
-          <SessionDetail
-            sessionId={selectedSession}
-            displayName={displayName}
-            messages={sessionMessages}
-            onBack={handleBack}
-            onRenamed={refetchNames}
-          />
         ) : (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground">{t("sessions.title")}</h3>
-            {sessions && sessionNames && (
-              <SessionList
-                sessions={sessions}
-                sessionNames={sessionNames}
-                selectedId={null}
-                onSelect={handleSelectSession}
-              />
-            )}
+          <div className="flex flex-col h-full">
+            <div className="px-3 py-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={globalSearchQuery}
+                  onChange={(e) => {
+                    setGlobalSearchQuery(e.target.value);
+                    setActiveSearchQuery(e.target.value);
+                  }}
+                  placeholder={t("sessions.searchAll")}
+                  className="h-8 pl-8 text-sm"
+                />
+              </div>
+              {activeSearchQuery && searchResults.length > 0 && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {t("sessions.foundSessions", { count: searchResults.length })}
+                </div>
+              )}
+              {activeSearchQuery && searchResults.length === 0 && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {t("sessions.noSessionsFound")}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {sessions && sessionNames && (
+                <SessionList
+                  sessions={sessions}
+                  sessionNames={sessionNames}
+                  selectedId={selectedSession}
+                  onSelect={handleSelectSession}
+                  searchQuery={activeSearchQuery}
+                  searchResults={searchResults.length > 0 ? searchResults : undefined}
+                />
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Empty state for message area */}
-      {!selectedSession && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <p>{t("sessions.selectSession")}</p>
-        </div>
-      )}
+      {/* Column 3: Message view */}
+      <div className="flex-1 flex flex-col min-w-[300px]">
+        {!selectedSession || !currentSession ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <p>{t("sessions.selectSession")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between border-b border-border px-4 py-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-medium text-sm truncate">{displayName}</span>
+                <span className="text-xs text-muted-foreground">{selectedSession.slice(0, 8)}</span>
+              </div>
+              <Button variant="ghost" size="icon-xs" onClick={() => setRenameOpen(true)}>
+                <Pencil className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} />
+            </div>
+          </>
+        )}
+      </div>
+      </div>
+
+      <RenameSessionDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        sessionId={selectedSession ?? ""}
+        currentName={displayName}
+        onRenamed={refetchNames}
+      />
     </div>
   );
 }

@@ -94,6 +94,37 @@ pub fn save_language(lang: &str) -> Result<(), Box<dyn std::error::Error>> {
     save_state(&state)
 }
 
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct HiddenProjects {
+    pub encoded_names: Vec<String>,
+}
+
+fn hidden_projects_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("hidden_projects.json"))
+}
+
+pub fn hide_project(encoded_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path = hidden_projects_path()?;
+    let mut data = if path.exists() {
+        read_json::<HiddenProjects>(&path)?
+    } else {
+        HiddenProjects::default()
+    };
+    if !data.encoded_names.contains(&encoded_name.to_string()) {
+        data.encoded_names.push(encoded_name.to_string());
+    }
+    write_json(&path, &data)
+}
+
+pub fn is_project_hidden(encoded_name: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    let path = hidden_projects_path()?;
+    if !path.exists() {
+        return Ok(false);
+    }
+    let data: HiddenProjects = read_json(&path)?;
+    Ok(data.encoded_names.contains(&encoded_name.to_string()))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Preset {
     pub id: String,

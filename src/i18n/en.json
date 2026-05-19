@@ -32,6 +32,8 @@
     "claudeMd": "CLAUDE.md",
     "viewSessions": "View Sessions",
     "openInTerminal": "Open in Terminal",
+    "removeProject": "Remove Project",
+    "removeProjectConfirm": "Remove this project from the list? (Actual files will not be deleted)",
     "addProjectTitle": "Add Project",
     "projectPathPlaceholder": "D:\\MyCodes\\my-project"
   },
@@ -45,7 +47,21 @@
     "assistant": "Assistant",
     "renameTitle": "Rename Session",
     "renamePlaceholder": "Enter session name (leave empty to reset)",
-    "sessionId": "Session ID: "
+    "sessionId": "Session ID: ",
+    "search": "Search messages...",
+    "noResults": "No matching results",
+    "thinking": "Thinking...",
+    "toolCall": "Tool Call",
+    "toolResult": "Tool Result",
+    "showThinking": "Show thinking",
+    "hideThinking": "Hide thinking",
+    "showMore": "Show more...",
+    "searchAll": "Search all sessions...",
+    "foundSessions": "{{count}} sessions found",
+    "noSessionsFound": "No matching sessions",
+    "matches": "matches",
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "config": {
     "title": "Configuration",

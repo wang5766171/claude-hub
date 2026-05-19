@@ -1,19 +1,32 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Trash2 } from "lucide-react";
 import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { invokeCommand } from "@/hooks/use-invoke";
 import type { Project } from "@/types";
 
 interface ProjectDetailProps {
   project: Project;
   onClose: () => void;
   onViewSessions: (encodedName: string) => void;
+  onRemoved?: () => void;
 }
 
-export function ProjectDetail({ project, onClose, onViewSessions }: ProjectDetailProps) {
+export function ProjectDetail({ project, onClose, onViewSessions, onRemoved }: ProjectDetailProps) {
   const { t } = useTranslation();
+
+  const handleRemove = async () => {
+    if (!confirm(t("projects.removeProjectConfirm"))) return;
+    try {
+      await invokeCommand("remove_project", { encodedName: project.encoded_name });
+      onRemoved?.();
+      onClose();
+    } catch (err) {
+      console.error("Failed to remove project:", err);
+    }
+  };
   return (
     <div className="fixed inset-y-0 right-0 z-10 w-96 border-l border-border bg-card shadow-lg">
       <div className="flex items-center justify-between border-b border-border p-4">
@@ -54,6 +67,10 @@ export function ProjectDetail({ project, onClose, onViewSessions }: ProjectDetai
           <Button variant="outline" className="w-full" disabled>
             <ExternalLink className="mr-2 h-4 w-4" />
             {t("projects.openInTerminal")}
+          </Button>
+          <Button variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={handleRemove}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            {t("projects.removeProject")}
           </Button>
         </div>
       </div>

@@ -32,6 +32,8 @@
     "claudeMd": "CLAUDE.md",
     "viewSessions": "查看会话",
     "openInTerminal": "在终端打开",
+    "removeProject": "移除项目",
+    "removeProjectConfirm": "确认从列表中移除该项目？（不会删除实际文件）",
     "addProjectTitle": "添加项目",
     "projectPathPlaceholder": "D:\\MyCodes\\my-project"
   },
@@ -45,7 +47,21 @@
     "assistant": "助手",
     "renameTitle": "重命名会话",
     "renamePlaceholder": "输入会话名称（留空则重置）",
-    "sessionId": "会话 ID："
+    "sessionId": "会话 ID：",
+    "search": "搜索会话内容...",
+    "noResults": "未找到匹配结果",
+    "thinking": "思考中...",
+    "toolCall": "调用工具",
+    "toolResult": "工具结果",
+    "showThinking": "查看思考",
+    "hideThinking": "收起思考",
+    "showMore": "显示更多...",
+    "searchAll": "搜索所有会话...",
+    "foundSessions": "找到 {{count}} 个会话",
+    "noSessionsFound": "没有匹配的会话",
+    "matches": "处匹配",
+    "expand": "展开",
+    "collapse": "收起"
   },
   "config": {
     "title": "配置管理",

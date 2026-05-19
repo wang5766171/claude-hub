@@ -14,9 +14,31 @@ fn serialize_option_datetime<S: serde::Serializer>(dt: &Option<DateTime<Utc>>, s
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ContentBlock {
+    #[serde(rename = "text")]
+    Text { text: String },
+    #[serde(rename = "tool_use")]
+    ToolUse {
+        id: String,
+        name: String,
+        #[serde(default)]
+        input: serde_json::Value,
+    },
+    #[serde(rename = "tool_result")]
+    ToolResult {
+        #[serde(rename = "tool_use_id")]
+        tool_use_id: String,
+        content: serde_json::Value,
+    },
+    #[serde(rename = "thinking")]
+    Thinking { thinking: String },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
     pub role: String,
-    pub content: String,
+    pub content: Vec<ContentBlock>,
     pub timestamp: Option<i64>,
 }
 
@@ -30,6 +52,26 @@ pub struct Session {
     pub started_at: Option<DateTime<Utc>>,
 }
 
+const CONVERSATION_TYPES: &[&str] = &["user", "assistant"];
+
+fn parse_content_blocks(value: &serde_json::Value) -> Vec<ContentBlock> {
+    match value {
+        serde_json::Value::String(s) => {
+            if s.trim().is_empty() {
+                vec![]
+            } else {
+                vec![ContentBlock::Text { text: s.clone() }]
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            arr.iter()
+                .filter_map(|item| serde_json::from_value(item.clone()).ok())
+                .collect()
+        }
+        _ => vec![],
+    }
+}
+
 pub fn parse_message(line: &str) -> Option<Message> {
     if line.trim().is_empty() {
         return None;
@@ -38,29 +80,56 @@ pub fn parse_message(line: &str) -> Option<Message> {
 
     let role = v.get("type")?.as_str()?.to_string();
 
-    let content = v.get("message")
+    if !CONVERSATION_TYPES.contains(&role.as_str()) {
+        return None;
+    }
+
+    let content_value = v.get("message")
         .and_then(|m| m.get("content"))
-        .and_then(|c| {
-            if c.is_string() {
-                Some(c.as_str().unwrap_or("").to_string())
-            } else {
-                Some(c.to_string())
-            }
-        })
-        .unwrap_or_default();
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+
+    let content = parse_content_blocks(&content_value);
+
+    if content.is_empty() {
+        return None;
+    }
 
     let timestamp = v.get("timestamp").and_then(|t| t.as_i64());
 
     Some(Message { role, content, timestamp })
 }
 
+fn merge_tool_results(messages: &mut Vec<Message>) {
+    let mut i = 1;
+    while i < messages.len() {
+        let is_only_tool_results = messages[i].role == "user"
+            && !messages[i].content.is_empty()
+            && messages[i].content.iter().all(|b| matches!(b, ContentBlock::ToolResult { .. }));
+
+        if is_only_tool_results && messages[i - 1].role == "assistant" {
+            let blocks: Vec<ContentBlock> = messages[i].content.drain(..).collect();
+            messages[i - 1].content.extend(blocks);
+            messages.remove(i);
+            continue;
+        }
+        i += 1;
+    }
+}
+
 pub fn load_session(path: &Path) -> Option<Session> {
     let id = path.file_stem()?.to_string_lossy().to_string();
     let content = std::fs::read_to_string(path).ok()?;
 
-    let messages: Vec<Message> = content.lines()
+    let mut messages: Vec<Message> = content.lines()
         .filter_map(|line| parse_message(line))
         .collect();
+
+    merge_tool_results(&mut messages);
+
+    if messages.is_empty() {
+        return None;
+    }
 
     let started_at = messages.first()
         .and_then(|m| m.timestamp)

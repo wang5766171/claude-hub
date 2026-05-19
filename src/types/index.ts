@@ -9,15 +9,28 @@ export interface Project {
 
 export interface Message {
   role: string;
-  content: string;
+  content: ContentBlock[];
   timestamp: number | null;
 }
+
+export type ContentBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: unknown }
+  | { type: "tool_result"; tool_use_id: string; content: unknown }
+  | { type: "thinking"; thinking: string };
 
 export interface Session {
   id: string;
   path: string;
   messages: Message[];
   started_at: string | null;
+}
+
+export interface SessionSearchResult {
+  sessionId: string;
+  matchCount: number;
+  previewText: string;
+  firstMatchIndex: number;
 }
 
 export interface HistoryEntry {

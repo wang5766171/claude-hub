@@ -63,7 +63,7 @@ export function ConfigPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 h-full overflow-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t("config.title")}</h2>
         <div className="flex gap-2">

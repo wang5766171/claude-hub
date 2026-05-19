@@ -30,6 +30,9 @@ pub fn scan_projects() -> Vec<Project> {
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let encoded_name = entry.file_name().to_string_lossy().to_string();
+            if crate::hub::is_project_hidden(&encoded_name).unwrap_or(false) {
+                continue;
+            }
             if let Some(project) = parse_project(&projects_dir, &encoded_name) {
                 projects.push(project);
             }

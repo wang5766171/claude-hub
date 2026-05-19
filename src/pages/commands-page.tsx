@@ -73,7 +73,7 @@ export function CommandsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 h-full overflow-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t("commands.title")}</h2>
         <Button size="sm" onClick={handleAddNew}>

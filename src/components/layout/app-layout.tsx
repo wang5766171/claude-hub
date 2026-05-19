@@ -16,7 +16,7 @@ export function AppLayout({ currentPage, onNavigate, modelName, projectCount, ch
     <div className="flex h-screen flex-col bg-background">
       <div className="flex flex-1 overflow-hidden">
         <Sidebar currentPage={currentPage} onNavigate={onNavigate} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-hidden">{children}</main>
       </div>
       <StatusBar modelName={modelName} projectCount={projectCount} />
     </div>
