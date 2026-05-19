@@ -1,11 +1,31 @@
-import "./App.css";
+import { useState } from "react";
+import { AppLayout } from "@/components/layout/app-layout";
+import { ProjectsPage } from "@/pages/projects-page";
+import { SessionsPage } from "@/pages/sessions-page";
+import { useInvoke } from "@/hooks/use-invoke";
+import type { Page, Project, ClaudeConfig } from "@/types";
 
 function App() {
+  const [currentPage, setCurrentPage] = useState<Page>("projects");
+  const { data: projects } = useInvoke<Project[]>("scan_projects");
+  const { data: config } = useInvoke<ClaudeConfig>("load_config");
+
   return (
-    <div className="min-h-screen bg-background text-foreground p-8">
-      <h1 className="text-2xl font-bold">Claude Hub</h1>
-      <p className="text-muted-foreground mt-2">Desktop client for managing Claude Code</p>
-    </div>
+    <AppLayout
+      currentPage={currentPage}
+      onNavigate={setCurrentPage}
+      modelName={config?.model ?? null}
+      projectCount={projects?.length ?? 0}
+    >
+      {currentPage === "projects" && <ProjectsPage />}
+      {currentPage === "sessions" && <SessionsPage />}
+      {currentPage === "config" && (
+        <div className="text-muted-foreground">Config management coming in P2</div>
+      )}
+      {currentPage === "commands" && (
+        <div className="text-muted-foreground">Commands coming in P3</div>
+      )}
+    </AppLayout>
   );
 }
 
