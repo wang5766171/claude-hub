@@ -22,7 +22,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
                 "Use j/k to select a project".to_string()
             }
         }
-        Mode::GlobalConfig | Mode::ConfigEditor => {
+        Mode::GlobalConfig => {
             if let Some(ref config) = app.config {
                 let mut lines = vec![format!("Model: {}", config.model.as_deref().unwrap_or("default"))];
                 if let Some(ref env) = config.env {
@@ -40,6 +40,23 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
                 "Failed to load config".to_string()
             }
         }
+        Mode::ConfigEditor => {
+            let mut lines = vec!["Model Presets:".to_string(), String::new()];
+            for (i, (name, value)) in crate::app::MODEL_PRESETS.iter().enumerate() {
+                let marker = if i == app.selected_preset { ">" } else { " " };
+                let display = if value.is_empty() {
+                    if i == app.selected_preset {
+                        format!("{} {} [{}]", marker, name, app.edit_buffer)
+                    } else {
+                        format!("{} {} (type to input)", marker, name)
+                    }
+                } else {
+                    format!("{} {} ({})", marker, name, value)
+                };
+                lines.push(display);
+            }
+            lines.join("\n")
+        }
         Mode::SessionViewer => {
             if app.sessions.is_empty() {
                 "No sessions found".to_string()
@@ -54,12 +71,17 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
             }
         }
         Mode::Help => "Help overlay shown".to_string(),
+        Mode::AddProjectInput => {
+            format!("Enter project path:\n\n> {}\n\n(Press Enter to confirm, Esc to cancel)", app.input_buffer)
+        }
     };
 
     let title = match app.mode {
         Mode::ProjectList | Mode::ProjectDetail => "Project Detail",
-        Mode::GlobalConfig | Mode::ConfigEditor => "Global Config",
+        Mode::GlobalConfig => "Global Config",
+        Mode::ConfigEditor => "Model Presets",
         Mode::SessionViewer => "Session",
+        Mode::AddProjectInput => "Add Project",
         _ => "Main",
     };
 

@@ -3,6 +3,13 @@ use crate::history::HistoryEntry;
 use crate::project::Project;
 use crate::session::Session;
 
+pub const MODEL_PRESETS: &[(&str, &str)] = &[
+    ("Opus", "opus[1m]"),
+    ("Sonnet", "sonnet[1m]"),
+    ("Haiku", "haiku[1m]"),
+    ("Custom", ""),
+];
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mode {
     ProjectList,
@@ -11,6 +18,7 @@ pub enum Mode {
     ConfigEditor,
     SessionViewer,
     Help,
+    AddProjectInput,
 }
 
 pub struct App {
@@ -22,6 +30,9 @@ pub struct App {
     pub should_quit: bool,
     pub sessions: Vec<Session>,
     pub history: Vec<HistoryEntry>,
+    pub selected_preset: usize,
+    pub edit_buffer: String,
+    pub input_buffer: String,
 }
 
 impl App {
@@ -35,6 +46,9 @@ impl App {
             should_quit: false,
             sessions: Vec::new(),
             history: Vec::new(),
+            selected_preset: 0,
+            edit_buffer: String::new(),
+            input_buffer: String::new(),
         }
     }
 
@@ -60,6 +74,45 @@ impl App {
         if self.mode == Mode::Help {
             if matches!(key.code, KeyCode::Esc | KeyCode::Char('?')) {
                 self.mode = Mode::ProjectList;
+            }
+            return;
+        }
+
+        if self.mode == Mode::ConfigEditor {
+            match key.code {
+                KeyCode::Char('j') | KeyCode::Down => {
+                    if self.selected_preset < MODEL_PRESETS.len() - 1 {
+                        self.selected_preset += 1;
+                    }
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    if self.selected_preset > 0 {
+                        self.selected_preset -= 1;
+                    }
+                }
+                KeyCode::Enter => {
+                    let preset = MODEL_PRESETS[self.selected_preset];
+                    if let Some(ref mut config) = self.config {
+                        let new_model = if preset.1.is_empty() {
+                            self.edit_buffer.clone()
+                        } else {
+                            preset.1.to_string()
+                        };
+                        config.model = Some(new_model);
+                        let _ = crate::config::save_config(config);
+                    }
+                    self.mode = Mode::GlobalConfig;
+                }
+                KeyCode::Esc => {
+                    self.mode = Mode::GlobalConfig;
+                }
+                KeyCode::Char(c) if self.selected_preset == MODEL_PRESETS.len() - 1 => {
+                    self.edit_buffer.push(c);
+                }
+                KeyCode::Backspace if self.selected_preset == MODEL_PRESETS.len() - 1 => {
+                    self.edit_buffer.pop();
+                }
+                _ => {}
             }
             return;
         }
