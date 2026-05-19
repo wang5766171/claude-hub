@@ -81,3 +81,55 @@ pub fn save_state(state: &AppState) -> Result<(), Box<dyn std::error::Error>> {
     let path = state_path()?;
     write_json(&path, state)
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Preset {
+    pub id: String,
+    pub name: String,
+    pub config: crate::config::ClaudeConfig,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Presets {
+    pub presets: Vec<Preset>,
+}
+
+fn presets_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("presets.json"))
+}
+
+pub fn list_presets() -> Result<Vec<Preset>, Box<dyn std::error::Error>> {
+    let path = presets_path()?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let data: Presets = read_json(&path)?;
+    Ok(data.presets)
+}
+
+pub fn save_preset(preset: Preset) -> Result<(), Box<dyn std::error::Error>> {
+    let path = presets_path()?;
+    let mut data = if path.exists() {
+        read_json::<Presets>(&path)?
+    } else {
+        Presets::default()
+    };
+    if let Some(idx) = data.presets.iter().position(|p| p.id == preset.id) {
+        data.presets[idx] = preset;
+    } else {
+        data.presets.push(preset);
+    }
+    write_json(&path, &data)
+}
+
+pub fn delete_preset(id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path = presets_path()?;
+    if !path.exists() {
+        return Ok(());
+    }
+    let mut data: Presets = read_json(&path)?;
+    data.presets.retain(|p| p.id != id);
+    write_json(&path, &data)
+}

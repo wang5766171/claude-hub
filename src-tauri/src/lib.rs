@@ -68,6 +68,53 @@ fn load_history() -> Vec<history::HistoryEntry> {
     history::load_history()
 }
 
+#[tauri::command]
+fn save_config(config: config::ClaudeConfig) -> Result<(), String> {
+    config::save_config(&config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_presets() -> Result<Vec<hub::Preset>, String> {
+    hub::list_presets().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_preset(preset: hub::Preset) -> Result<(), String> {
+    hub::save_preset(preset).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_preset(id: String) -> Result<(), String> {
+    hub::delete_preset(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn apply_preset(id: String) -> Result<(), String> {
+    let presets = hub::list_presets().map_err(|e| e.to_string())?;
+    let preset = presets.into_iter().find(|p| p.id == id).ok_or("Preset not found")?;
+    config::save_config(&preset.config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_backups() -> Result<Vec<config::BackupEntry>, String> {
+    config::list_backups().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn restore_backup(backup_path: String) -> Result<(), String> {
+    config::restore_backup(&backup_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn export_config(path: String) -> Result<(), String> {
+    config::export_config(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn import_config(path: String) -> Result<config::ClaudeConfig, String> {
+    config::import_config(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -83,6 +130,15 @@ pub fn run() {
             delete_session_name,
             load_config,
             load_history,
+            save_config,
+            list_presets,
+            save_preset,
+            delete_preset,
+            apply_preset,
+            list_backups,
+            restore_backup,
+            export_config,
+            import_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

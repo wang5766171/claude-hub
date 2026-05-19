@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { ProjectsPage } from "@/pages/projects-page";
 import { SessionsPage } from "@/pages/sessions-page";
+import { ConfigPage } from "@/pages/config-page";
 import { useInvoke } from "@/hooks/use-invoke";
 import type { Page, Project, ClaudeConfig } from "@/types";
 
@@ -32,9 +33,7 @@ function App() {
           onConsumedInitial={() => setInitialProject(null)}
         />
       )}
-      {currentPage === "config" && (
-        <div className="text-muted-foreground">Config management coming in P2</div>
-      )}
+      {currentPage === "config" && <ConfigPage />}
       {currentPage === "commands" && (
         <div className="text-muted-foreground">Commands coming in P3</div>
       )}

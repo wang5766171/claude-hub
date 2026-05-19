@@ -34,6 +34,13 @@ export interface ClaudeConfig {
   skipDangerousModePermissionPrompt: boolean | null;
 }
 
+export interface Preset {
+  id: string;
+  name: string;
+  config: ClaudeConfig;
+  createdAt: string;
+}
+
 export interface BackupEntry {
   name: string;
   path: string;
