@@ -10,6 +10,10 @@ function App() {
   const { data: projects } = useInvoke<Project[]>("scan_projects");
   const { data: config } = useInvoke<ClaudeConfig>("load_config");
 
+  const navigateToSession = (_encodedName: string) => {
+    setCurrentPage("sessions");
+  };
+
   return (
     <AppLayout
       currentPage={currentPage}
@@ -17,7 +21,9 @@ function App() {
       modelName={config?.model ?? null}
       projectCount={projects?.length ?? 0}
     >
-      {currentPage === "projects" && <ProjectsPage />}
+      {currentPage === "projects" && (
+        <ProjectsPage onViewSessions={navigateToSession} />
+      )}
       {currentPage === "sessions" && <SessionsPage />}
       {currentPage === "config" && (
         <div className="text-muted-foreground">Config management coming in P2</div>
