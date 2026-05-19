@@ -1,4 +1,6 @@
 use ratatui::{Frame, layout::Rect, widgets::{Block, Borders, Paragraph}};
+use ratatui::style::{Color, Style};
+use ratatui::text::Span;
 use crate::app::{App, Mode};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
@@ -86,6 +88,9 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().title(title).borders(Borders::ALL));
+        .block(Block::default()
+            .title(Span::styled(title, Style::default().fg(Color::Cyan)))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan)));
     f.render_widget(paragraph, area);
 }

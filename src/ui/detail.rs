@@ -1,4 +1,5 @@
 use ratatui::{Frame, layout::Rect, widgets::{Block, Borders, Paragraph}};
+use ratatui::style::{Color, Style};
 use crate::app::{App, Mode};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
@@ -31,6 +32,9 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().title("Detail").borders(Borders::ALL));
+        .block(Block::default()
+            .title("Detail")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray)));
     f.render_widget(paragraph, area);
 }
