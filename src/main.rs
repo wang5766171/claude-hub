@@ -1,10 +1,5 @@
 mod app;
-mod config;
 mod event;
-mod project;
-mod session;
-mod history;
-mod keybind;
 mod ui;
 
 use app::App;

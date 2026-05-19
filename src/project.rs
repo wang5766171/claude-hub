@@ -60,7 +60,7 @@ fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
     })
 }
 
-fn decode_project_path(encoded: &str) -> String {
+pub fn decode_project_path(encoded: &str) -> String {
     encoded.replace("--", ":\\").replace("-", "\\")
 }
 
