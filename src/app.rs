@@ -1,5 +1,7 @@
 use crate::config::ClaudeConfig;
+use crate::history::HistoryEntry;
 use crate::project::Project;
+use crate::session::Session;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mode {
@@ -18,6 +20,8 @@ pub struct App {
     pub config: Option<ClaudeConfig>,
     pub selected_config_field: usize,
     pub should_quit: bool,
+    pub sessions: Vec<Session>,
+    pub history: Vec<HistoryEntry>,
 }
 
 impl App {
@@ -29,12 +33,25 @@ impl App {
             config: None,
             selected_config_field: 0,
             should_quit: false,
+            sessions: Vec::new(),
+            history: Vec::new(),
         }
     }
 
     pub fn load(&mut self) {
         self.projects = crate::project::scan_projects();
         self.config = crate::config::load_config().ok();
+        self.history = crate::history::load_history();
+    }
+
+    pub fn load_sessions(&mut self) {
+        if let Some(idx) = self.selected_project {
+            if idx < self.projects.len() {
+                let home = dirs::home_dir().unwrap();
+                let project_dir = home.join(".claude").join("projects").join(&self.projects[idx].encoded_name);
+                self.sessions = crate::session::list_sessions(&project_dir);
+            }
+        }
     }
 
     pub fn handle_key(&mut self, key: crossterm::event::KeyEvent) {
@@ -91,6 +108,7 @@ impl App {
                 let next = (current + delta).clamp(0, len as i32 - 1) as usize;
                 self.selected_project = Some(next);
                 self.mode = Mode::ProjectDetail;
+                self.load_sessions();
             }
             Mode::GlobalConfig => {
                 if let Some(ref config) = self.config {

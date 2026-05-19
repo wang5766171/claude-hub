@@ -40,7 +40,19 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
                 "Failed to load config".to_string()
             }
         }
-        Mode::SessionViewer => "Session viewer (coming soon)".to_string(),
+        Mode::SessionViewer => {
+            if app.sessions.is_empty() {
+                "No sessions found".to_string()
+            } else {
+                app.sessions.iter().map(|s| {
+                    let time = s.started_at
+                        .map(|t| t.format("%Y-%m-%d %H:%M").to_string())
+                        .unwrap_or_else(|| "unknown".to_string());
+                    let msg_count = s.messages.len();
+                    format!("{} | {} msgs | {}", &s.id[..8], msg_count, time)
+                }).collect::<Vec<_>>().join("\n")
+            }
+        }
         Mode::Help => "Help overlay shown".to_string(),
     };
 
