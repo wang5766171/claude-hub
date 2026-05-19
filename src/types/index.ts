@@ -24,14 +24,14 @@ export interface HistoryEntry {
   display: string;
   timestamp: number | null;
   project: string | null;
-  session_id: string | null;
+  sessionId: string | null;
 }
 
 export interface ClaudeConfig {
   model: string | null;
   env: Record<string, string> | null;
-  enabled_plugins: Record<string, boolean> | null;
-  skip_dangerous: boolean | null;
+  enabledPlugins: Record<string, boolean> | null;
+  skipDangerousModePermissionPrompt: boolean | null;
 }
 
 export interface BackupEntry {

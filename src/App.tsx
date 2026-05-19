@@ -7,10 +7,12 @@ import type { Page, Project, ClaudeConfig } from "@/types";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>("projects");
+  const [initialProject, setInitialProject] = useState<string | null>(null);
   const { data: projects } = useInvoke<Project[]>("scan_projects");
   const { data: config } = useInvoke<ClaudeConfig>("load_config");
 
-  const navigateToSession = (_encodedName: string) => {
+  const navigateToSession = (encodedName: string) => {
+    setInitialProject(encodedName);
     setCurrentPage("sessions");
   };
 
@@ -24,7 +26,12 @@ function App() {
       {currentPage === "projects" && (
         <ProjectsPage onViewSessions={navigateToSession} />
       )}
-      {currentPage === "sessions" && <SessionsPage />}
+      {currentPage === "sessions" && (
+        <SessionsPage
+          initialProject={initialProject}
+          onConsumedInitial={() => setInitialProject(null)}
+        />
+      )}
       {currentPage === "config" && (
         <div className="text-muted-foreground">Config management coming in P2</div>
       )}

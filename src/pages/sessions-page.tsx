@@ -6,11 +6,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
 import type { Session, Project, Message } from "@/types";
 
-export function SessionsPage() {
+interface SessionsPageProps {
+  initialProject?: string | null;
+  onConsumedInitial?: () => void;
+}
+
+export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPageProps) {
   const { data: projects, loading: projectsLoading } = useInvoke<Project[]>("scan_projects");
   const { data: sessionNames, refetch: refetchNames } = useInvoke<Record<string, string>>("get_session_names");
 
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(initialProject ?? null);
+
+  // Consume initial project after first render
+  if (initialProject && onConsumedInitial) {
+    onConsumedInitial();
+  }
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
 
