@@ -61,7 +61,18 @@ fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
 }
 
 pub fn decode_project_path(encoded: &str) -> String {
-    encoded.replace("--", ":\\").replace("-", "\\")
+    // First "--" is the drive letter separator (e.g., "E--" -> "E:\")
+    // Remaining "--" and "-" are path separators ("\")
+    if let Some(pos) = encoded.find("--") {
+        let mut result = String::with_capacity(encoded.len() + 8);
+        result.push_str(&encoded[..pos]);
+        result.push_str(":\\");
+        let rest = &encoded[pos + 2..];
+        result.push_str(&rest.replace("--", "\\").replace('-', "\\"));
+        result
+    } else {
+        encoded.replace('-', "\\")
+    }
 }
 
 fn count_sessions(dir: &Path) -> usize {
