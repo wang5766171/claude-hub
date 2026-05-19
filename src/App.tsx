@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { ProjectsPage } from "@/pages/projects-page";
 import { SessionsPage } from "@/pages/sessions-page";
 import { ConfigPage } from "@/pages/config-page";
+import { CommandsPage } from "@/pages/commands-page";
 import { useInvoke } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
 import type { Page, Project, ClaudeConfig } from "@/types";
@@ -37,9 +38,7 @@ function App() {
         />
       )}
       {currentPage === "config" && <ConfigPage />}
-      {currentPage === "commands" && (
-        <div className="text-muted-foreground">{t("commands.comingSoon")}</div>
-      )}
+      {currentPage === "commands" && <CommandsPage />}
     </AppLayout>
   );
 }

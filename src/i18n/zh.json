@@ -82,6 +82,27 @@
     "loadingBackups": "加载备份中..."
   },
   "commands": {
-    "comingSoon": "命令功能将在后续版本中推出"
+    "title": "快捷命令",
+    "addCommand": "添加命令",
+    "editCommand": "编辑命令",
+    "deleteCommand": "删除命令",
+    "noCommands": "暂无自定义命令",
+    "noCommandsDesc": "添加一个常用命令以开始使用",
+    "commandName": "命令名称",
+    "commandNamePlaceholder": "例如：检查版本",
+    "commandString": "命令",
+    "commandStringPlaceholder": "例如：claude --version",
+    "projectPath": "项目路径（可选）",
+    "projectPathPlaceholder": "留空表示任意目录",
+    "run": "执行",
+    "running": "执行中...",
+    "confirmRun": "确认执行",
+    "confirmRunDesc": "即将执行以下命令：",
+    "output": "输出",
+    "success": "执行成功",
+    "failed": "执行失败（退出码 {{code}}）",
+    "noOutput": "无输出",
+    "builtIn": "内置命令",
+    "custom": "自定义命令"
   }
 }

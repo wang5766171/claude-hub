@@ -82,6 +82,27 @@
     "loadingBackups": "Loading backups..."
   },
   "commands": {
-    "comingSoon": "Commands coming in P3"
+    "title": "Commands",
+    "addCommand": "Add Command",
+    "editCommand": "Edit Command",
+    "deleteCommand": "Delete Command",
+    "noCommands": "No custom commands yet",
+    "noCommandsDesc": "Add a frequently used command to get started",
+    "commandName": "Command Name",
+    "commandNamePlaceholder": "e.g., Check Version",
+    "commandString": "Command",
+    "commandStringPlaceholder": "e.g., claude --version",
+    "projectPath": "Project Path (optional)",
+    "projectPathPlaceholder": "Leave empty for any directory",
+    "run": "Run",
+    "running": "Running...",
+    "confirmRun": "Confirm Execution",
+    "confirmRunDesc": "About to execute the following command:",
+    "output": "Output",
+    "success": "Execution succeeded",
+    "failed": "Execution failed (exit code {{code}})",
+    "noOutput": "No output",
+    "builtIn": "Built-in Commands",
+    "custom": "Custom Commands"
   }
 }

@@ -48,3 +48,17 @@ export interface BackupEntry {
 }
 
 export type Page = "projects" | "sessions" | "config" | "commands";
+
+export interface CustomCommand {
+  id: string;
+  name: string;
+  command: string;
+  projectPath: string | null;
+}
+
+export interface CommandOutput {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  code: number | null;
+}

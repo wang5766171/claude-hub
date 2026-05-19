@@ -3,6 +3,7 @@ mod config;
 mod session;
 mod history;
 mod hub;
+mod command;
 
 use std::collections::HashMap;
 
@@ -125,6 +126,26 @@ fn save_language(lang: String) -> Result<(), String> {
     hub::save_language(&lang).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn list_custom_commands() -> Result<Vec<command::CustomCommand>, String> {
+    command::list_custom_commands().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_custom_command(cmd: command::CustomCommand) -> Result<(), String> {
+    command::save_custom_command(cmd).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_custom_command(id: String) -> Result<(), String> {
+    command::delete_custom_command(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn execute_command(command: String, cwd: Option<String>) -> Result<command::CommandOutput, String> {
+    command::execute_command(&command, cwd.as_deref()).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -151,6 +172,10 @@ pub fn run() {
             import_config,
             load_language,
             save_language,
+            list_custom_commands,
+            save_custom_command,
+            delete_custom_command,
+            execute_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
