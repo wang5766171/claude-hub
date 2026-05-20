@@ -1,7 +1,21 @@
 {
   "name": "claude-hub",
-  "private": true,
+  "private": false,
   "version": "0.1.0",
+  "description": "A desktop GUI for managing Claude Code projects, sessions, and configuration",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wang5766171/claude-hub.git"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "tauri",
+    "desktop",
+    "gui",
+    "ai-tools"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
