@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import type { Page, Project, ClaudeConfig } from "@/types";
 
 function App() {
-  const { t } = useTranslation();
+  useTranslation();
   const [currentPage, setCurrentPage] = useState<Page>("projects");
   const [initialProject, setInitialProject] = useState<string | null>(null);
   const { data: projects } = useInvoke<Project[]>("scan_projects");

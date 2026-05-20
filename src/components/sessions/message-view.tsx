@@ -29,7 +29,6 @@ function highlightText(text: string, query: string): React.ReactNode {
 }
 
 function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "tool_use" }; query: string; dark?: boolean }) {
-  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const inputStr = JSON.stringify(block.input, null, 2);
 

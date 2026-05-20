@@ -27,7 +27,7 @@ export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
             <h3 className="font-medium">{project.name}</h3>
           </div>
           {project.has_claude_md && (
-            <FileText className="h-4 w-4 text-green-500" title={t("projects.hasClaudeMd")} />
+            <FileText className="h-4 w-4 text-green-500" />
           )}
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground" title={project.path}>
