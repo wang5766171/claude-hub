@@ -17,7 +17,14 @@
 
 ---
 
-<img src="https://github.com/user-attachments/assets/placeholder-screenshot.png" alt="Claude Hub Screenshot" width="100%">
+<p align="center">
+  <img src="./docs/screenshots/projects.png" alt="Projects Page" width="49%" />
+  <img src="./docs/screenshots/sessions.png" alt="Sessions Page" width="49%" />
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/config.png" alt="Config Page" width="49%" />
+</p>
 
 > **TL;DR** — If you use Claude Code CLI daily and want a visual way to manage projects, browse session history, and edit config without touching JSON files, this is for you.
 

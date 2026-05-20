@@ -17,7 +17,14 @@
 
 ---
 
-<img src="https://github.com/user-attachments/assets/placeholder-screenshot.png" alt="Claude Hub 截图" width="100%">
+<p align="center">
+  <img src="./docs/screenshots/projects.png" alt="项目页" width="49%" />
+  <img src="./docs/screenshots/sessions.png" alt="会话页" width="49%" />
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/config.png" alt="配置页" width="49%" />
+</p>
 
 > **一句话介绍** —— 如果你每天都在用 Claude Code CLI，想要一个可视化界面来管理项目、浏览会话历史、编辑配置文件，而不用手动改 JSON，这就是你要的工具。
 
