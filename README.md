@@ -4,6 +4,10 @@
 
 **A desktop GUI for managing [Claude Code](https://docs.anthropic.com/en/docs/claude-code) projects, sessions, and configuration.**
 
+Repo: [GitHub](https://github.com/wang5766171/claude-hub) | [Gitee (国内镜像)](https://gitee.com/wangzwa/claude-hub)
+
+[![Download](https://img.shields.io/badge/Download-latest%20release-brightgreen.svg)](https://github.com/wang5766171/claude-hub/releases/latest)
+
 [English](#features) | [中文文档](./README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

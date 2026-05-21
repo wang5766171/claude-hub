@@ -4,6 +4,10 @@
 
 **一款 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 桌面管理客户端 —— 项目、会话、配置，一目了然。**
 
+仓库：[GitHub](https://github.com/wang5766171/claude-hub) | [Gitee（国内镜像）](https://gitee.com/wangzwa/claude-hub)
+
+[![下载](https://img.shields.io/badge/下载-最新版本-brightgreen.svg)](https://gitee.com/wangzwa/claude-hub/releases)
+
 [English](./README.md) | [中文文档](#)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,7 +15,7 @@
 [![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 [![Rust](https://img.shields.io/badge/Rust-1.77+-dea584.svg)](https://www.rust-lang.org/)
 
-[报告问题](https://github.com/wang5766171/claude-hub/issues/new?template=bug_report.yml) · [功能建议](https://github.com/wang5766171/claude-hub/issues/new?template=feature_request.yml) · [讨论区](https://github.com/wang5766171/claude-hub/discussions)
+[报告问题](https://gitee.com/wangzwa/claude-hub/issues) · [功能建议](https://gitee.com/wangzwa/claude-hub/issues)
 
 </div>
 
