@@ -27,11 +27,29 @@ fn remove_project(encoded_name: String) -> Result<(), String> {
 #[tauri::command]
 fn list_sessions(encoded_name: String) -> Result<Vec<session::Session>, String> {
     let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-    let project_dir = home.join(".claude").join("projects").join(&encoded_name);
+    let projects_dir = home.join(".claude").join("projects");
+    let project_dir = projects_dir.join(&encoded_name);
     if !project_dir.exists() {
         return Err(format!("Project directory not found: {}", encoded_name));
     }
-    Ok(session::list_sessions(&project_dir))
+
+    let mut all_sessions = session::list_sessions(&project_dir);
+
+    // Also load sessions from merged secondaries
+    if let Ok(secondaries) = hub::get_merged_secondaries(&encoded_name) {
+        for sec in secondaries {
+            let sec_dir = projects_dir.join(&sec);
+            if sec_dir.exists() {
+                let mut sec_sessions = session::list_sessions(&sec_dir);
+                all_sessions.append(&mut sec_sessions);
+            }
+        }
+    }
+
+    // Sort all by started_at (most recent first)
+    all_sessions.sort_by(|a, b| b.started_at.cmp(&a.started_at));
+
+    Ok(all_sessions)
 }
 
 #[tauri::command]
@@ -206,6 +224,50 @@ fn save_project_meta(encoded_name: String, meta: hub::ProjectMeta) -> Result<(),
     hub::save_project_meta(&encoded_name, meta).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn get_level1_dir_cmd(encoded_name: String) -> Result<Option<String>, String> {
+    let decoded = project::decode_project_path(&encoded_name);
+    Ok(project::get_level1_dir(&decoded))
+}
+
+#[tauri::command]
+fn get_mergeable_projects(encoded_name: String) -> Result<Vec<String>, String> {
+    let decoded = project::decode_project_path(&encoded_name);
+    let level1 = project::get_level1_dir(&decoded).ok_or("Cannot determine level-1 directory")?;
+
+    let projects = project::scan_projects();
+    let mergeable: Vec<String> = projects.iter()
+        .filter(|p| p.encoded_name != encoded_name)
+        .filter(|p| {
+            let p_level1 = project::get_level1_dir(&p.path.to_string_lossy());
+            p_level1.as_ref() == Some(&level1)
+        })
+        .map(|p| p.encoded_name.clone())
+        .collect();
+    Ok(mergeable)
+}
+
+#[tauri::command]
+fn merge_projects_logical(primary: String, secondaries: Vec<String>) -> Result<(), String> {
+    hub::merge_projects_logical(&primary, secondaries).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn split_project(primary: String) -> Result<(), String> {
+    hub::split_project(&primary).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_project_merges() -> Result<std::collections::HashMap<String, Vec<String>>, String> {
+    let merges = hub::load_project_merges().map_err(|e| e.to_string())?;
+    Ok(merges.merges)
+}
+
+#[tauri::command]
+fn get_merged_secondaries(primary: String) -> Result<Vec<String>, String> {
+    hub::get_merged_secondaries(&primary).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -256,6 +318,12 @@ pub fn run() {
             load_claude_md,
             load_project_metas,
             save_project_meta,
+            get_level1_dir_cmd,
+            get_mergeable_projects,
+            merge_projects_logical,
+            split_project,
+            get_project_merges,
+            get_merged_secondaries,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

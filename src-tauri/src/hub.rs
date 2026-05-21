@@ -237,3 +237,92 @@ pub fn save_project_meta(encoded_name: &str, meta: ProjectMeta) -> Result<(), Bo
 
     write_json(&path, &metas)
 }
+
+// --- Project Merges ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProjectMerges {
+    #[serde(default)]
+    pub merges: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PhysicalMergeUndo {
+    pub primary: String,
+    pub secondaries: Vec<SecondaryMove>,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SecondaryMove {
+    pub encoded_name: String,
+    pub claude_dir_backup: Option<String>,
+    pub project_claude_dir_backup: Option<String>,
+}
+
+fn project_merges_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("project_merges.json"))
+}
+
+fn physical_merge_undo_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("physical_merge_undo.json"))
+}
+
+pub fn load_project_merges() -> Result<ProjectMerges, Box<dyn std::error::Error>> {
+    let path = project_merges_path()?;
+    if !path.exists() {
+        return Ok(ProjectMerges::default());
+    }
+    read_json(&path)
+}
+
+fn save_project_merges(merges: &ProjectMerges) -> Result<(), Box<dyn std::error::Error>> {
+    write_json(&project_merges_path()?, merges)
+}
+
+pub fn merge_projects_logical(primary: &str, secondaries: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut merges = load_project_merges()?;
+
+    // First, remove all secondaries from being primaries themselves
+    for s in &secondaries {
+        merges.merges.remove(s);
+    }
+
+    // Then, add secondaries to the primary's list
+    let existing = merges.merges.entry(primary.to_string()).or_default();
+    for s in secondaries {
+        if !existing.contains(&s) {
+            existing.push(s);
+        }
+    }
+
+    save_project_merges(&merges)
+}
+
+pub fn split_project(primary: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut merges = load_project_merges()?;
+    merges.merges.remove(primary);
+    save_project_merges(&merges)
+}
+
+pub fn get_merged_secondaries(primary: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let merges = load_project_merges()?;
+    Ok(merges.merges.get(primary).cloned().unwrap_or_default())
+}
+
+/// Get all secondary encoded names across all merges
+pub fn get_all_secondaries() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let merges = load_project_merges()?;
+    Ok(merges.merges.values().flatten().cloned().collect())
+}
+
+/// Given a secondary encoded name, find which primary it belongs to
+pub fn resolve_primary(secondary: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    let merges = load_project_merges()?;
+    for (primary, secondaries) in &merges.merges {
+        if secondaries.contains(&secondary.to_string()) {
+            return Ok(Some(primary.clone()));
+        }
+    }
+    Ok(None)
+}

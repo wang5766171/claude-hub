@@ -38,6 +38,25 @@ pub fn scan_projects() -> Vec<Project> {
             }
         }
     }
+
+    // Filter out merged secondaries
+    let secondaries = crate::hub::get_all_secondaries().unwrap_or_default();
+    projects.retain(|p| !secondaries.contains(&p.encoded_name));
+
+    // Aggregate session counts from merged secondaries into primaries
+    if let Ok(merges) = crate::hub::load_project_merges() {
+        for (primary, secs) in &merges.merges {
+            if let Some(primary_project) = projects.iter_mut().find(|p| p.encoded_name == *primary) {
+                for sec in secs {
+                    let sec_dir = projects_dir.join(sec);
+                    if sec_dir.exists() {
+                        primary_project.session_count += count_sessions(&sec_dir);
+                    }
+                }
+            }
+        }
+    }
+
     projects.sort_by(|a, b| b.last_active.cmp(&a.last_active));
     projects
 }
@@ -148,6 +167,26 @@ pub fn encode_project_path(path: &str) -> String {
     with_drive
 }
 
+/// Get the level-1 directory from a project path.
+/// E:\projectA → E:\projectA
+/// D:\MyCodes\claude-hub → D:\MyCodes
+/// D:\MyCodes\Milk Order\all-sys → D:\MyCodes
+pub fn get_level1_dir(path: &str) -> Option<String> {
+    let path = std::path::Path::new(path);
+    let components: Vec<std::path::Component<'_>> = path.components().collect();
+    // Need at least: Prefix("D:") + RootDir + one Normal component (e.g., "D:\" + "MyCodes")
+    // components: Prefix("D:"), RootDir, Normal("MyCodes"), Normal("claude-hub")
+    if components.len() < 3 {
+        return None;
+    }
+    // Build path from prefix + root + first normal component
+    let mut result = std::path::PathBuf::new();
+    result.push(components[0]); // drive prefix
+    result.push(components[1]); // root dir
+    result.push(components[2]); // first dir segment
+    Some(result.to_string_lossy().to_string())
+}
+
 pub fn add_project(path: &str) -> Option<Project> {
     let project_path = Path::new(path);
     if !project_path.join(".claude").exists() {
@@ -207,6 +246,13 @@ fn get_last_active(dir: &Path) -> Option<String> {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn test_get_level1_dir() {
+        assert_eq!(get_level1_dir("D:\\MyCodes\\claude-hub"), Some("D:\\MyCodes".to_string()));
+        assert_eq!(get_level1_dir("E:\\projectA"), Some("E:\\projectA".to_string()));
+        assert_eq!(get_level1_dir("D:\\MyCodes\\Milk Order\\all-sys"), Some("D:\\MyCodes".to_string()));
+    }
 
     #[test]
     fn test_encode_project_path() {
