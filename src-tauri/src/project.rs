@@ -84,31 +84,53 @@ pub fn decode_project_path(encoded: &str) -> String {
 }
 
 /// Recursively try to build a valid filesystem path from dash-separated segments.
-/// At each step, try both: merging the next segment with a literal '-', or treating it as a path separator.
+/// At each step, try:
+/// 1. Joining segments with literal '-' (handles dirs like "claude-hub")
+/// 2. Also try replacing '-' with ' ' in the merged segment (handles dirs like "Milk Order")
 fn resolve_path_from_parts(current: &str, remaining: &[&str]) -> String {
     if remaining.is_empty() {
         return current.to_string();
     }
 
-    // Try joining multiple leading segments with literal '-' to find a valid directory
+    // Build merged candidates from leading segments joined with '-'
     let mut merged = remaining[0].to_string();
     for i in 0..remaining.len() {
         if i > 0 {
             merged.push('-');
             merged.push_str(remaining[i]);
         }
-        let candidate = format!("{}\\{}", current, merged);
+
+        // Try the literal merged segment (dashes stay as dashes)
+        let candidate = join_path(current, &merged);
         let rest = &remaining[i + 1..];
         if candidate_is_valid(&candidate, rest.is_empty()) {
             let result = resolve_path_from_parts(&candidate, rest);
-            if result_needs_further_resolution(&result, remaining) {
+            if result_is_valid(&result) {
                 return result;
+            }
+        }
+
+        // Also try replacing '-' with ' ' in the merged segment (space decoding)
+        let merged_with_spaces = merged.replace('-', " ");
+        if merged_with_spaces != merged {
+            let candidate_spaced = join_path(current, &merged_with_spaces);
+            if candidate_is_valid(&candidate_spaced, rest.is_empty()) {
+                let result = resolve_path_from_parts(&candidate_spaced, rest);
+                if result_is_valid(&result) {
+                    return result;
+                }
             }
         }
     }
 
-    // Fallback: join everything with '\'
-    format!("{}\\{}", current, remaining.join("\\"))
+    // Fallback: join everything with path separator
+    join_path(current, &remaining.join("\\"))
+}
+
+/// Join two path components, avoiding double backslashes.
+fn join_path(base: &str, segment: &str) -> String {
+    let base_trimmed = base.trim_end_matches('\\');
+    format!("{}\\{}", base_trimmed, segment)
 }
 
 fn candidate_is_valid(path: &str, is_final: bool) -> bool {
@@ -116,13 +138,13 @@ fn candidate_is_valid(path: &str, is_final: bool) -> bool {
     is_final || p.is_dir()
 }
 
-fn result_needs_further_resolution(result: &str, original_parts: &[&str]) -> bool {
-    // Check that the result path's depth matches the expected depth roughly
-    std::path::Path::new(result).is_dir() || !original_parts.is_empty()
+fn result_is_valid(result: &str) -> bool {
+    Path::new(result).is_dir()
 }
 
 pub fn encode_project_path(path: &str) -> String {
-    let with_drive = path.replace(':', "").replace('\\', "-").replace('/', "-");
+    // Claude Code encodes: ':\' -> '--' (drive separator), then all remaining '\' and '/' -> '-'
+    let with_drive = path.replace(":\\", "--").replace('\\', "-").replace('/', "-");
     with_drive
 }
 
@@ -179,4 +201,73 @@ fn get_last_active(dir: &Path) -> Option<String> {
             let datetime: chrono::DateTime<chrono::Local> = t.into();
             datetime.format("%Y-%m-%d %H:%M").to_string()
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_encode_project_path() {
+        let encoded = encode_project_path("D:\\MyCodes\\claude-hub");
+        assert_eq!(encoded, "D--MyCodes-claude-hub");
+    }
+
+    #[test]
+    fn test_decode_simple_path() {
+        let tmp = std::env::temp_dir().join("test_simple_path");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let path = tmp.to_string_lossy().to_string();
+        let encoded = encode_project_path(&path);
+        let decoded = decode_project_path(&encoded);
+        assert_eq!(decoded, path);
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_decode_path_with_spaces() {
+        let tmp = std::env::temp_dir().join("Milk Order");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let path = tmp.to_string_lossy().to_string();
+        let encoded = encode_project_path(&path);
+        let decoded = decode_project_path(&encoded);
+        assert_eq!(decoded, path);
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_decode_path_with_dashes() {
+        let tmp = std::env::temp_dir().join("claude-hub");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let path = tmp.to_string_lossy().to_string();
+        let encoded = encode_project_path(&path);
+        let decoded = decode_project_path(&encoded);
+        assert_eq!(decoded, path);
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_decode_path_with_spaces_and_dashes() {
+        let parent = std::env::temp_dir().join("My Project");
+        let tmp = parent.join("my-sub-dir");
+        let _ = fs::remove_dir_all(&parent);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let path = tmp.to_string_lossy().to_string();
+        let encoded = encode_project_path(&path);
+        let decoded = decode_project_path(&encoded);
+        assert_eq!(decoded, path);
+
+        let _ = fs::remove_dir_all(&parent);
+    }
 }
