@@ -64,7 +64,9 @@
     "noSessionsFound": "No matching sessions",
     "matches": "matches",
     "expand": "Expand",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "config": {
     "title": "Configuration",
