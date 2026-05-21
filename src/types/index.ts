@@ -31,6 +31,8 @@ export interface Session {
   messages: Message[];
   started_at: string | null;
   display_name?: string;
+  last_active: string | null;
+  project_path?: string;
 }
 
 export interface SessionSearchResult {

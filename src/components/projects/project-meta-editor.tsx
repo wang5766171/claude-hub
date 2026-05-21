@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,15 +9,22 @@ import type { ProjectMeta } from "@/types";
 interface ProjectMetaEditorProps {
   encodedName: string;
   meta?: ProjectMeta;
+  allTags?: string[];
   onUpdate: () => void;
 }
 
-export function ProjectMetaEditor({ encodedName, meta, onUpdate }: ProjectMetaEditorProps) {
+export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: ProjectMetaEditorProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(meta?.custom_name || "");
   const [notes, setNotes] = useState(meta?.notes || "");
   const [tags, setTags] = useState<string[]>(meta?.tags || []);
   const [tagInput, setTagInput] = useState("");
+
+  const suggestions = useMemo(() => {
+    const q = tagInput.trim().toLowerCase();
+    const existing = new Set(tags);
+    return (allTags ?? []).filter(t => !existing.has(t) && (q === "" || t.toLowerCase().includes(q)));
+  }, [allTags, tags, tagInput]);
 
   const handleSave = async () => {
     await invokeCommand("save_project_meta", {
@@ -124,6 +131,20 @@ export function ProjectMetaEditor({ encodedName, meta, onUpdate }: ProjectMetaEd
             <Plus className="h-3 w-3" />
           </Button>
         </div>
+        {suggestions.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {suggestions.map(tag => (
+              <button
+                key={tag}
+                type="button"
+                className="inline-flex items-center px-1.5 py-0.5 text-xs border border-dashed rounded hover:bg-accent transition-colors"
+                onClick={() => { setTags([...tags, tag]); setTagInput(""); }}
+              >
+                + {tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="space-y-1">
         <Label className="text-xs">备注</Label>

@@ -52,6 +52,10 @@ pub struct Session {
     pub started_at: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    #[serde(serialize_with = "serialize_option_datetime")]
+    pub last_active: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_path: Option<String>,
 }
 
 /// Parse an ai-title line from JSONL, returns the aiTitle string if found
@@ -199,12 +203,18 @@ pub fn load_session(path: &Path) -> Option<Session> {
         first_user_text.map(|t| smart_summary(&t))
     });
 
+    let project_path = path.parent()
+        .and_then(|dir| dir.file_name())
+        .map(|name| crate::project::decode_project_path(&name.to_string_lossy()));
+
     Some(Session {
         id,
         path: path.to_path_buf(),
         messages,
         started_at,
         display_name,
+        last_active: None,
+        project_path,
     })
 }
 
@@ -218,7 +228,10 @@ pub fn list_sessions(project_dir: &Path) -> Vec<Session> {
                 let mtime = path.metadata().ok()
                     .and_then(|m| m.modified().ok())
                     .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-                if let Some(session) = load_session(&path) {
+                if let Some(mut session) = load_session(&path) {
+                    session.last_active = mtime
+                        .duration_since(std::time::SystemTime::UNIX_EPOCH).ok()
+                        .map(|d| DateTime::from_timestamp_millis(d.as_millis() as i64).unwrap_or_default());
                     sessions_with_time.push((session, mtime));
                 }
             }

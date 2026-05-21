@@ -93,7 +93,7 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
 
         if use_wt {
             std::process::Command::new("wt")
-                .args(["-d", project_path, "--"])
+                .args(["-d", project_path, "--", "cmd", "/K"])
                 .arg(&claude_cmd)
                 .creation_flags(0x00000008)
                 .spawn()?;

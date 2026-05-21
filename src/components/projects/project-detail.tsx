@@ -23,6 +23,12 @@ interface ProjectDetailProps {
 }
 
 export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, projectMetas, onUpdateMetas, merges, onSplit }: ProjectDetailProps) {
+  const collectAllTags = (metas?: Record<string, ProjectMeta>): string[] => {
+    if (!metas) return [];
+    const tagSet = new Set<string>();
+    Object.values(metas).forEach(m => m.tags?.forEach(t => tagSet.add(t)));
+    return [...tagSet].sort();
+  };
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"info" | "config">("info");
   const { data: claudeMd } = useInvoke<string | null>("load_claude_md", { projectPath: project.path });
@@ -106,6 +112,7 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, pro
                 <ProjectMetaEditor
                   encodedName={project.encoded_name}
                   meta={projectMetas?.[project.encoded_name]}
+                  allTags={collectAllTags(projectMetas)}
                   onUpdate={() => onUpdateMetas?.()}
                 />
               </CardContent>

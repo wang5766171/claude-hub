@@ -35,7 +35,10 @@
     "removeProject": "Remove Project",
     "removeProjectConfirm": "Remove this project from the list? (Actual files will not be deleted)",
     "addProjectTitle": "Add Project",
-    "projectPathPlaceholder": "D:\\MyCodes\\my-project"
+    "projectPathPlaceholder": "D:\\MyCodes\\my-project",
+    "refresh": "Refresh Projects",
+    "search": "Search by name or tag...",
+    "noSearchResults": "No matching projects"
   },
   "sessions": {
     "projects": "Projects",

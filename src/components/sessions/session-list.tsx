@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Clock, Terminal } from "lucide-react";
+import { MessageSquare, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Session, SessionSearchResult } from "@/types";
 
@@ -46,12 +46,19 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
                   : "text-muted-foreground hover:bg-accent/50"
               )}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                <div className="truncate">
-                  <span className={cn(hasCustomName && "font-medium")}>{displayName}</span>
-                  {hasCustomName && (
-                    <span className="ml-2 text-xs text-muted-foreground">{session.id.slice(0, 8)}</span>
+              <div className="grid grid-cols-[1.25rem_1fr] gap-x-2 min-w-0">
+                <MessageSquare className="h-3.5 w-3.5 mt-1 text-muted-foreground" />
+                <div className="min-w-0 text-left">
+                  <div className={cn("truncate text-left", hasCustomName && "font-medium")}>
+                    {displayName}
+                    {hasCustomName && (
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">{session.id.slice(0, 8)}</span>
+                    )}
+                  </div>
+                  {session.last_active && (
+                    <div className="text-[11px] text-muted-foreground/70 leading-tight text-left">
+                      {new Date(session.last_active).toLocaleString()}
+                    </div>
                   )}
                 </div>
               </div>
@@ -61,15 +68,7 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
                     {result.matchCount} {t("sessions.matches")}
                   </span>
                 ) : (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span>{t("sessions.msgCount", { count: session.messages.length })}</span>
-                    {session.started_at && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(session.started_at).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-xs">{t("sessions.msgCount", { count: session.messages.length })}</span>
                 )}
                 {onResumeSession && (
                   <span

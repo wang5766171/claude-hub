@@ -6,7 +6,7 @@ import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Pencil, Search, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { searchSessions } from "@/lib/session-search";
 import type { Session, Project, Message, SessionSearchResult } from "@/types";
@@ -64,10 +64,13 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   };
 
   const handleResumeSession = async (sessionId: string, _sessionPath: string) => {
+    // Find the session to get its actual project_path (may differ from selectedProject for merged projects)
+    const session = sessions?.find(s => s.id === sessionId);
     const project = projects?.find((p) => p.encoded_name === selectedProject);
-    if (!project) return;
+    const cwd = session?.project_path || project?.path;
+    if (!cwd) return;
     await invokeCommand("open_in_terminal", {
-      projectPath: project.path,
+      projectPath: cwd,
       resumeSessionId: sessionId,
     });
   };

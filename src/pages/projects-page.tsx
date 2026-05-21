@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Settings2 } from "lucide-react";
-import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
+import { Plus, FolderOpen, Settings2, RotateCw, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { useInvoke } from "@/hooks/use-invoke";
 import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import { AddProjectDialog } from "@/components/projects/add-project-dialog";
 import { MergeDialog } from "@/components/projects/merge-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import type { Project, ProjectMeta, ProjectMergeInfo } from "@/types";
 
 interface ProjectsPageProps {
@@ -38,6 +39,18 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   const [checkedProjects, setCheckedProjects] = useState<Set<string>>(new Set());
   const [level1Filter, setLevel1Filter] = useState<string | null>(null);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+
+  const allTags = useMemo(() => {
+    if (!projectMetas) return [];
+    const tagSet = new Set<string>();
+    Object.values(projectMetas).forEach(m => m.tags?.forEach(t => tagSet.add(t)));
+    return [...tagSet].sort();
+  }, [projectMetas]);
+
+  const TAG_COLLAPSE_LIMIT = 8;
 
   const handleProjectAdded = () => {
     refetch();
@@ -96,6 +109,24 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
     return getLevel1FromPath(project.path) !== level1Filter;
   };
 
+  // Filter projects by search query and selected tag
+  const filteredProjects = (() => {
+    let result = projects ?? [];
+    if (selectedTag) {
+      result = result.filter(p => projectMetas?.[p.encoded_name]?.tags?.includes(selectedTag));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((p) => {
+        const meta = projectMetas?.[p.encoded_name];
+        const name = meta?.custom_name?.toLowerCase() || p.name.toLowerCase();
+        const tags = meta?.tags?.map(t => t.toLowerCase()) ?? [];
+        return name.includes(q) || tags.some(t => t.includes(q)) || p.path.toLowerCase().includes(q);
+      });
+    }
+    return result;
+  })();
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -114,6 +145,9 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t("projects.title")}</h2>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => { refetch(); refetchMetas(); refetchMerges(); }} title={t("projects.refresh")}>
+            <RotateCw className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={toggleManagementMode}>
             <Settings2 className="h-4 w-4 mr-1" />
             {managementMode ? "退出管理" : "管理"}
@@ -125,15 +159,73 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
         </div>
       </div>
 
+      {projects && projects.length > 0 && (
+        <div className="space-y-2">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("projects.search")}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {allTags
+                .slice(0, tagsExpanded ? undefined : TAG_COLLAPSE_LIMIT)
+                .map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    className={`inline-flex items-center px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      selectedTag === tag
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-primary/20"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              {allTags.length > TAG_COLLAPSE_LIMIT && (
+                <button
+                  onClick={() => setTagsExpanded(!tagsExpanded)}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {tagsExpanded ? (
+                    <><ChevronUp className="h-3 w-3" />收起</>
+                  ) : (
+                    <><ChevronDown className="h-3 w-3" />+{allTags.length - TAG_COLLAPSE_LIMIT}</>
+                  )}
+                </button>
+              )}
+              {selectedTag && (
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground ml-1"
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {!projects || projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FolderOpen className="h-12 w-12 mb-4" />
           <p>{t("projects.noProjects")}</p>
           <p className="text-sm">{t("projects.noProjectsDesc")}</p>
         </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <Search className="h-8 w-8 mb-2" />
+          <p className="text-sm">{t("projects.noSearchResults")}</p>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <ProjectCard
               key={project.encoded_name}
               project={project}
@@ -145,6 +237,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
               disabled={isDisabled(project)}
               onCheck={() => handleCheck(project.encoded_name)}
               mergedCount={getMergedCount(project.encoded_name)}
+              onTagClick={(tag) => setSelectedTag(selectedTag === tag ? null : tag)}
             />
           ))}
         </div>
@@ -156,9 +249,9 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
           onClose={() => setSelectedProject(null)}
           onViewSessions={(name) => onViewSessions?.(name)}
           onRemoved={() => { setSelectedProject(null); refetch(); }}
-          projectMetas={projectMetas}
+          projectMetas={projectMetas ?? undefined}
           onUpdateMetas={refetchMetas}
-          merges={merges}
+          merges={merges ?? undefined}
           onSplit={handleMergeComplete}
         />
       )}
@@ -183,8 +276,8 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
         <MergeDialog
           open={mergeDialogOpen}
           onOpenChange={setMergeDialogOpen}
-          primary={[...checkedProjects][0]}
-          secondaries={[...checkedProjects].slice(1)}
+          selectedProjects={[...checkedProjects]}
+          projectNames={Object.fromEntries(projects?.map(p => [p.encoded_name, p.name]) ?? [])}
           onMergeComplete={handleMergeComplete}
         />
       )}

@@ -14,6 +14,7 @@ interface ProjectCardProps {
   disabled?: boolean;
   onCheck?: () => void;
   mergedCount?: number;
+  onTagClick?: (tag: string) => void;
 }
 
 export function ProjectCard({
@@ -26,6 +27,7 @@ export function ProjectCard({
   disabled,
   onCheck,
   mergedCount,
+  onTagClick,
 }: ProjectCardProps) {
   const { t } = useTranslation();
   const displayName = meta?.custom_name || project.name;
@@ -58,7 +60,7 @@ export function ProjectCard({
       {disabled && managementMode && (
         <div className="absolute inset-0 bg-background/50 rounded-lg" />
       )}
-      {mergedCount && mergedCount > 0 && (
+      {mergedCount != null && mergedCount > 0 && (
         <div className="absolute top-2 right-2 z-10">
           <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded">
             +{mergedCount} merged
@@ -86,7 +88,11 @@ export function ProjectCard({
         {meta?.tags && meta.tags.length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {meta.tags.slice(0, 2).map(tag => (
-              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-secondary text-secondary-foreground rounded">
+              <span
+                key={tag}
+                className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-secondary text-secondary-foreground rounded cursor-pointer hover:bg-primary/20 hover:text-primary transition-colors"
+                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag); }}
+              >
                 {tag}
               </span>
             ))}

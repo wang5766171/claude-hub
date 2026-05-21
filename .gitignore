@@ -23,7 +23,8 @@ Thumbs.db
 .graphify_uncached.txt
 graphify-out
 
-# Internal dev docs
+# Internal dev docs (local only, not tracked)
+docs/v*/
 docs/superpowers/
 
 # Local screenshots

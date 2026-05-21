@@ -156,13 +156,21 @@ function TextBlock({ text, query, dark }: { text: string; query: string; dark?: 
         )}
       </div>
       <CollapsibleTrigger asChild>
-        <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs text-muted-foreground hover:text-foreground">
-          {expanded ? (
-            <><ChevronUp className="h-3 w-3 mr-1" />{"收起"}</>
-          ) : (
-            <><ChevronDown className="h-3 w-3 mr-1" />{"展开"}</>
+        <button
+          className={cn(
+            "mt-1 inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs transition-colors",
+            dark
+              ? "text-blue-100/90 hover:text-blue-100 hover:bg-white/10"
+              : "text-foreground/60 hover:text-foreground hover:bg-muted"
           )}
-        </Button>
+        >
+          {expanded ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+          {expanded ? "收起" : "展开"}
+        </button>
       </CollapsibleTrigger>
     </Collapsible>
   );

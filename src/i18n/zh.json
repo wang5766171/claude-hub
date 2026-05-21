@@ -35,7 +35,10 @@
     "removeProject": "移除项目",
     "removeProjectConfirm": "确认从列表中移除该项目？（不会删除实际文件）",
     "addProjectTitle": "添加项目",
-    "projectPathPlaceholder": "D:\\MyCodes\\my-project"
+    "projectPathPlaceholder": "D:\\MyCodes\\my-project",
+    "refresh": "刷新项目",
+    "search": "搜索项目名称或标签...",
+    "noSearchResults": "没有匹配的项目"
   },
   "sessions": {
     "projects": "项目",
