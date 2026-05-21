@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, RotateCw } from "lucide-react";
+import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, RotateCw, Copy, Check } from "lucide-react";
 import type { Message, ContentBlock } from "@/types";
 
 interface MessageViewProps {
@@ -35,21 +35,21 @@ function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "t
   const inputStr = JSON.stringify(block.input, null, 2);
 
   return (
-    <Collapsible open={expanded} onOpenChange={setExpanded}>
+    <Collapsible open={expanded} onOpenChange={setExpanded} className="overflow-hidden">
       <div className={cn(
-        "rounded-md border overflow-hidden text-sm",
+        "rounded-md border text-sm",
         dark ? "border-blue-300/50 bg-blue-400/30" : "border-blue-200 bg-blue-50"
       )}>
         <CollapsibleTrigger asChild>
           <button
             className={cn(
-              "flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors",
+              "flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors min-w-0",
               dark ? "text-blue-100 hover:bg-blue-400/40" : "text-blue-700 hover:bg-blue-100"
             )}
           >
-            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            <Wrench className="h-3 w-3" />
-            <span className="font-mono font-medium">[{block.name}]</span>
+            {expanded ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
+            <Wrench className="h-3 w-3 shrink-0" />
+            <span className="font-mono font-medium truncate">[{block.name}]</span>
           </button>
         </CollapsibleTrigger>
         {expanded && (
@@ -77,7 +77,7 @@ function ToolResultBlock({ block, query, dark }: { block: ContentBlock & { type:
   const displayText = expanded ? contentStr : contentStr.slice(0, 500);
 
   return (
-    <Collapsible open={expanded} onOpenChange={setExpanded}>
+    <Collapsible open={expanded} onOpenChange={setExpanded} className="overflow-hidden">
       <div className={cn(
         "rounded-md border text-sm",
         dark ? "border-amber-300/50 bg-amber-400/30" : "border-amber-200 bg-amber-50"
@@ -131,21 +131,22 @@ function ThinkingBlock({ block }: { block: ContentBlock & { type: "thinking" } }
 }
 
 function TextBlock({ text, query, dark }: { text: string; query: string; dark?: boolean }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const needsCollapse = text.length > 200;
 
   if (!needsCollapse) {
     return (
-      <div className="whitespace-pre-wrap break-words text-sm">
+      <div className="whitespace-pre-wrap break-all text-sm overflow-hidden">
         {query ? highlightText(text, query) : text}
       </div>
     );
   }
 
   return (
-    <Collapsible open={expanded} onOpenChange={setExpanded}>
+    <Collapsible open={expanded} onOpenChange={setExpanded} className="overflow-hidden">
       <div className="relative">
-        <div className={cn("whitespace-pre-wrap break-words text-sm", !expanded && "max-h-24 overflow-hidden")}>
+        <div className={cn("whitespace-pre-wrap break-all text-sm overflow-hidden", !expanded && "max-h-24")}>
           {query ? highlightText(text, query) : text}
         </div>
         {!expanded && (
@@ -169,10 +170,45 @@ function TextBlock({ text, query, dark }: { text: string; query: string; dark?: 
           ) : (
             <ChevronDown className="h-3 w-3" />
           )}
-          {expanded ? "收起" : "展开"}
+          {expanded ? t("sessions.collapse") : t("sessions.expand")}
         </button>
       </CollapsibleTrigger>
     </Collapsible>
+  );
+}
+
+function extractMessageText(msg: Message): string {
+  return msg.content.map(block => {
+    switch (block.type) {
+      case "text": return block.text;
+      case "tool_use": return `[${block.name}]\n${JSON.stringify(block.input, null, 2)}`;
+      case "tool_result": return typeof block.content === "string" ? block.content : JSON.stringify(block.content, null, 2);
+      case "thinking": return block.thinking;
+      default: return "";
+    }
+  }).filter(Boolean).join("\n\n");
+}
+
+function CopyButton({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      title={t("sessions.copy")}
+    >
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? t("sessions.copied") : t("sessions.copy")}
+    </button>
   );
 }
 
@@ -269,8 +305,8 @@ export function MessageView({ messages, initialSearchQuery, onRefresh }: Message
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="space-y-4 p-4">
+      <ScrollArea className="flex-1 min-h-0 message-scroll">
+        <div className="space-y-4 p-4 overflow-hidden max-w-full">
           {messages.map((msg, i) => {
             const isUser = msg.role === "user";
             return (
@@ -302,15 +338,16 @@ export function MessageView({ messages, initialSearchQuery, onRefresh }: Message
                     )}
                   </div>
                   <div className={cn(
-                    "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0",
+                    "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0 max-w-full",
                     isUser ? "bg-blue-500 text-white" : "bg-muted"
                   )}>
                     {msg.content.map((block, j) => (
-                      <div key={j}>
+                      <div key={j} className="overflow-hidden">
                         {renderBlock(block, searchQuery, isUser)}
                       </div>
                     ))}
                   </div>
+                  <CopyButton text={extractMessageText(msg)} />
                 </div>
 
                 {/* Avatar (right for user) */}
