@@ -112,7 +112,7 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved }: P
                 <MessageSquare className="mr-2 h-4 w-4" />
                 {t("projects.viewSessions")}
               </Button>
-              <Button variant="outline" className="w-full" disabled>
+              <Button variant="outline" className="w-full" onClick={() => invokeCommand("open_in_terminal", { projectPath: project.path })}>
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t("projects.openInTerminal")}
               </Button>
