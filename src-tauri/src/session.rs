@@ -50,6 +50,43 @@ pub struct Session {
     pub messages: Vec<Message>,
     #[serde(serialize_with = "serialize_option_datetime")]
     pub started_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+}
+
+/// Parse an ai-title line from JSONL, returns the aiTitle string if found
+fn parse_ai_title(line: &str) -> Option<String> {
+    let v: serde_json::Value = serde_json::from_str(line).ok()?;
+    if v.get("type")?.as_str()? == "ai-title" {
+        v.get("aiTitle")?.as_str().map(|s| s.to_string())
+    } else {
+        None
+    }
+}
+
+/// Generate a smart summary from text: split by punctuation, take first sentence, max 50 chars
+fn smart_summary(text: &str) -> String {
+    let text = text.trim();
+    if text.is_empty() {
+        return String::new();
+    }
+    // Split by sentence-ending punctuation or newlines
+    let first_sentence = text
+        .split(&['。', '？', '！', '，', '\n', '.', '?', '!', ','][..])
+        .next()
+        .unwrap_or(text)
+        .trim();
+    if first_sentence.len() <= 50 {
+        first_sentence.to_string()
+    } else {
+        // Find a natural break point near 50 chars
+        let end = first_sentence.char_indices()
+            .take_while(|(i, _)| *i < 50)
+            .last()
+            .map(|(i, c)| i + c.len_utf8())
+            .unwrap_or(50);
+        format!("{}…", &first_sentence[..end])
+    }
 }
 
 const CONVERSATION_TYPES: &[&str] = &["user", "assistant"];
@@ -120,10 +157,33 @@ fn merge_tool_results(messages: &mut Vec<Message>) {
 pub fn load_session(path: &Path) -> Option<Session> {
     let id = path.file_stem()?.to_string_lossy().to_string();
     let content = std::fs::read_to_string(path).ok()?;
+    let lines: Vec<&str> = content.lines().collect();
 
-    let mut messages: Vec<Message> = content.lines()
-        .filter_map(|line| parse_message(line))
-        .collect();
+    let mut messages = Vec::new();
+    let mut last_ai_title: Option<String> = None;
+    let mut first_user_text: Option<String> = None;
+
+    for line in &lines {
+        // Check for ai-title
+        if let Some(title) = parse_ai_title(line) {
+            last_ai_title = Some(title);
+        }
+        // Parse conversation messages
+        if let Some(msg) = parse_message(line) {
+            // Capture first user message text for smart summary fallback
+            if msg.role == "user" && first_user_text.is_none() {
+                for block in &msg.content {
+                    if let ContentBlock::Text { text } = block {
+                        if !text.trim().is_empty() {
+                            first_user_text = Some(text.clone());
+                            break;
+                        }
+                    }
+                }
+            }
+            messages.push(msg);
+        }
+    }
 
     merge_tool_results(&mut messages);
 
@@ -135,11 +195,16 @@ pub fn load_session(path: &Path) -> Option<Session> {
         .and_then(|m| m.timestamp)
         .map(|ts| DateTime::from_timestamp_millis(ts).unwrap_or_default());
 
+    let display_name = last_ai_title.or_else(|| {
+        first_user_text.map(|t| smart_summary(&t))
+    });
+
     Some(Session {
         id,
         path: path.to_path_buf(),
         messages,
         started_at,
+        display_name,
     })
 }
 
@@ -157,4 +222,40 @@ pub fn list_sessions(project_dir: &Path) -> Vec<Session> {
     }
     sessions.sort_by(|a, b| b.started_at.cmp(&a.started_at));
     sessions
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_ai_title() {
+        let line = r#"{"type":"ai-title","aiTitle":"Fix login bug","sessionId":"abc"}"#;
+        assert_eq!(parse_ai_title(line), Some("Fix login bug".to_string()));
+    }
+
+    #[test]
+    fn test_parse_ai_title_ignores_other() {
+        let line = r#"{"type":"user","message":{"content":"hello"}}"#;
+        assert_eq!(parse_ai_title(line), None);
+    }
+
+    #[test]
+    fn test_smart_summary_short() {
+        assert_eq!(smart_summary("Hello world"), "Hello world");
+    }
+
+    #[test]
+    fn test_smart_summary_long() {
+        let long = "This is a very long sentence that exceeds fifty characters by quite a bit more text here";
+        let result = smart_summary(long);
+        assert!(result.ends_with('…'));
+        assert!(result.len() <= 55); // 50 + ellipsis
+    }
+
+    #[test]
+    fn test_smart_summary_splits_on_punctuation() {
+        assert_eq!(smart_summary("First sentence. Second one"), "First sentence");
+        assert_eq!(smart_summary("第一句。第二句"), "第一句");
+    }
 }

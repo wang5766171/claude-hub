@@ -24,6 +24,7 @@ export interface Session {
   path: string;
   messages: Message[];
   started_at: string | null;
+  display_name?: string;
 }
 
 export interface SessionSearchResult {

@@ -30,7 +30,7 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
   return (
     <div className="space-y-1">
       {filteredSessions.map((session) => {
-        const displayName = sessionNames[session.id] || session.id.slice(0, 8);
+        const displayName = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
         const hasCustomName = !!sessionNames[session.id];
         const result = resultMap.get(session.id);
 
