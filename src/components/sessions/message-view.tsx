@@ -2,9 +2,10 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { User, Bot, Wrench, ChevronDown, ChevronRight, Search, ArrowDown, RotateCw } from "lucide-react";
+import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, RotateCw } from "lucide-react";
 import type { Message, ContentBlock } from "@/types";
 
 interface MessageViewProps {
@@ -34,32 +35,35 @@ function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "t
   const inputStr = JSON.stringify(block.input, null, 2);
 
   return (
-    <div className={cn(
-      "rounded-md border overflow-hidden text-sm",
-      dark ? "border-blue-300/50 bg-blue-400/30" : "border-blue-200 bg-blue-50"
-    )}>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className={cn(
-          "flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors",
-          dark ? "text-blue-100 hover:bg-blue-400/40" : "text-blue-700 hover:bg-blue-100"
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className={cn(
+        "rounded-md border overflow-hidden text-sm",
+        dark ? "border-blue-300/50 bg-blue-400/30" : "border-blue-200 bg-blue-50"
+      )}>
+        <CollapsibleTrigger asChild>
+          <button
+            className={cn(
+              "flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors",
+              dark ? "text-blue-100 hover:bg-blue-400/40" : "text-blue-700 hover:bg-blue-100"
+            )}
+          >
+            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            <Wrench className="h-3 w-3" />
+            <span className="font-mono font-medium">[{block.name}]</span>
+          </button>
+        </CollapsibleTrigger>
+        {expanded && (
+          <pre className={cn(
+            "px-3 py-2 border-t text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
+            dark
+              ? "border-blue-300/30 text-blue-100 bg-black/10"
+              : "border-blue-200 text-blue-800 bg-blue-50/50"
+          )}>
+            {query ? highlightText(inputStr, query) : inputStr}
+          </pre>
         )}
-      >
-        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        <Wrench className="h-3 w-3" />
-        <span className="font-mono font-medium">{block.name}</span>
-      </button>
-      {expanded && (
-        <pre className={cn(
-          "px-3 py-2 border-t text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
-          dark
-            ? "border-blue-300/30 text-blue-100 bg-black/10"
-            : "border-blue-200 text-blue-800 bg-blue-50/50"
-        )}>
-          {query ? highlightText(inputStr, query) : inputStr}
-        </pre>
-      )}
-    </div>
+      </div>
+    </Collapsible>
   );
 }
 
@@ -73,38 +77,41 @@ function ToolResultBlock({ block, query, dark }: { block: ContentBlock & { type:
   const displayText = expanded ? contentStr : contentStr.slice(0, 500);
 
   return (
-    <div className={cn(
-      "rounded-md border text-sm",
-      dark ? "border-amber-300/50 bg-amber-400/30" : "border-amber-200 bg-amber-50"
-    )}>
-      <div
-        className={cn(
-          "flex items-center gap-1 px-3 py-1.5 text-xs font-medium cursor-pointer select-none",
-          dark ? "text-amber-100 hover:bg-amber-400/40" : "text-amber-700 hover:bg-amber-100"
-        )}
-        onClick={() => setExpanded(!expanded)}
-      >
-        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        {t("sessions.toolResult")}
-      </div>
-      <pre className={cn(
-        "px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
-        dark ? "text-amber-100" : "text-amber-800"
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className={cn(
+        "rounded-md border text-sm",
+        dark ? "border-amber-300/50 bg-amber-400/30" : "border-amber-200 bg-amber-50"
       )}>
-        {query ? highlightText(displayText, query) : displayText}
-      </pre>
-      {truncated && !expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          className={cn(
-            "px-3 py-1 text-xs",
-            dark ? "text-amber-200 hover:text-amber-100" : "text-amber-600 hover:text-amber-800"
-          )}
-        >
-          {t("sessions.showMore")}
-        </button>
-      )}
-    </div>
+        <CollapsibleTrigger asChild>
+          <div
+            className={cn(
+              "flex items-center gap-1 px-3 py-1.5 text-xs font-medium cursor-pointer select-none",
+              dark ? "text-amber-100 hover:bg-amber-400/40" : "text-amber-700 hover:bg-amber-100"
+            )}
+          >
+            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            [Result]
+          </div>
+        </CollapsibleTrigger>
+        <pre className={cn(
+          "px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
+          dark ? "text-amber-100" : "text-amber-800"
+        )}>
+          {query ? highlightText(displayText, query) : displayText}
+        </pre>
+        {truncated && !expanded && (
+          <button
+            onClick={() => setExpanded(true)}
+            className={cn(
+              "px-3 py-1 text-xs",
+              dark ? "text-amber-200 hover:text-amber-100" : "text-amber-600 hover:text-amber-800"
+            )}
+          >
+            {t("sessions.showMore")}
+          </button>
+        )}
+      </div>
+    </Collapsible>
   );
 }
 
@@ -123,43 +130,48 @@ function ThinkingBlock({ block }: { block: ContentBlock & { type: "thinking" } }
   );
 }
 
-function TextBlock({ text, query }: { text: string; query: string }) {
-  const { t } = useTranslation();
+function TextBlock({ text, query, dark }: { text: string; query: string; dark?: boolean }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = text.length > 2000;
+  const needsCollapse = text.length > 200;
 
-  if (!isLong) {
+  if (!needsCollapse) {
     return (
-      <div className="whitespace-pre-wrap text-sm leading-relaxed break-all overflow-hidden">
+      <div className="whitespace-pre-wrap break-words text-sm">
         {query ? highlightText(text, query) : text}
       </div>
     );
   }
 
-  const displayText = expanded ? text : text.slice(0, 2000);
   return (
-    <div className="min-w-0">
-      <div className={cn(
-        "text-sm leading-relaxed break-all",
-        expanded ? "whitespace-pre-wrap max-h-[80vh] overflow-auto" : "whitespace-pre-wrap max-h-60 overflow-hidden relative"
-      )}>
-        {query ? highlightText(displayText, query) : displayText}
-        {!expanded && <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-background/80 to-transparent" />}
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className="relative">
+        <div className={cn("whitespace-pre-wrap break-words text-sm", !expanded && "max-h-24 overflow-hidden")}>
+          {query ? highlightText(text, query) : text}
+        </div>
+        {!expanded && (
+          <div className={cn(
+            "absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent",
+            dark ? "from-blue-500/90" : "from-muted/90"
+          )} />
+        )}
       </div>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="text-xs text-muted-foreground hover:text-foreground mt-1"
-      >
-        {expanded ? t("sessions.collapse") : t("sessions.expand")}
-      </button>
-    </div>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs text-muted-foreground hover:text-foreground">
+          {expanded ? (
+            <><ChevronUp className="h-3 w-3 mr-1" />{"收起"}</>
+          ) : (
+            <><ChevronDown className="h-3 w-3 mr-1" />{"展开"}</>
+          )}
+        </Button>
+      </CollapsibleTrigger>
+    </Collapsible>
   );
 }
 
 function renderBlock(block: ContentBlock, query: string, dark?: boolean): React.ReactNode {
   switch (block.type) {
     case "text":
-      return <TextBlock text={block.text} query={query} />;
+      return <TextBlock text={block.text} query={query} dark={dark} />;
     case "tool_use":
       return <ToolUseBlock block={block} query={query} dark={dark} />;
     case "tool_result":

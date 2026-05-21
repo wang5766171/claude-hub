@@ -6,7 +6,7 @@ import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Pencil, Search, RotateCw } from "lucide-react";
+import { MessageSquare, Pencil, Search, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { searchSessions } from "@/lib/session-search";
 import type { Session, Project, Message, SessionSearchResult } from "@/types";
@@ -31,6 +31,8 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [renameOpen, setRenameOpen] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
+  const [projectCollapsed, setProjectCollapsed] = useState(false);
+  const [sessionCollapsed, setSessionCollapsed] = useState(false);
 
   const { data: sessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
@@ -97,74 +99,104 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     <div className="h-full overflow-x-auto">
       <div className="flex h-full min-w-[780px]">
       {/* Column 1: Project selector */}
-      <div className="w-48 shrink-0 border-r border-border overflow-hidden flex flex-col">
-        <h3 className="text-sm font-medium text-muted-foreground px-2 py-2">{t("sessions.projects")}</h3>
-        <div className="space-y-0.5 overflow-y-auto flex-1">
-          {projects?.filter((p) => p.session_count > 0).map((project) => (
-            <button
-              key={project.encoded_name}
-              onClick={() => handleSelectProject(project.encoded_name)}
-              className={`block w-full rounded px-2 py-1.5 text-left text-sm truncate ${
-                selectedProject === project.encoded_name
-                  ? "bg-accent font-medium"
-                  : "text-muted-foreground hover:bg-accent/50"
-              }`}
-            >
-              {project.name}
-            </button>
-          ))}
+      {projectCollapsed ? (
+        <div
+          className="w-2 shrink-0 border-r border-border bg-muted/30 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-all duration-200"
+          onClick={() => setProjectCollapsed(false)}
+        >
+          <ChevronRight className="h-3 w-3 text-muted-foreground" />
         </div>
-      </div>
+      ) : (
+        <div className="w-48 shrink-0 border-r border-border overflow-hidden flex flex-col transition-all duration-200 relative">
+          <h3 className="text-sm font-medium text-muted-foreground px-2 py-2">{t("sessions.projects")}</h3>
+          <div className="space-y-0.5 overflow-y-auto flex-1">
+            {projects?.filter((p) => p.session_count > 0).map((project) => (
+              <button
+                key={project.encoded_name}
+                onClick={() => handleSelectProject(project.encoded_name)}
+                className={`block w-full rounded px-2 py-1.5 text-left text-sm truncate ${
+                  selectedProject === project.encoded_name
+                    ? "bg-accent font-medium"
+                    : "text-muted-foreground hover:bg-accent/50"
+                }`}
+              >
+                {project.name}
+              </button>
+            ))}
+          </div>
+          <button
+            className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-border w-6 h-6 flex items-center justify-center hover:bg-border/80"
+            onClick={() => setProjectCollapsed(true)}
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Column 2: Session list */}
-      <div className="w-72 shrink-0 border-r border-border flex flex-col">
-        {!selectedProject ? (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <MessageSquare className="h-8 w-8 mb-2" />
-            <p className="text-sm">{t("sessions.selectProject")}</p>
-          </div>
-        ) : (
-          <div className="flex flex-col h-full">
-            <div className="px-3 py-2 border-b border-border">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={globalSearchQuery}
-                  onChange={(e) => {
-                    setGlobalSearchQuery(e.target.value);
-                    setActiveSearchQuery(e.target.value);
-                  }}
-                  placeholder={t("sessions.searchAll")}
-                  className="h-8 pl-8 text-sm"
-                />
+      {sessionCollapsed ? (
+        <div
+          className="w-2 shrink-0 border-r border-border bg-muted/30 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-all duration-200"
+          onClick={() => setSessionCollapsed(false)}
+        >
+          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="w-72 shrink-0 border-r border-border flex flex-col transition-all duration-200 relative">
+          {!selectedProject ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mb-2" />
+              <p className="text-sm">{t("sessions.selectProject")}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col h-full">
+              <div className="px-3 py-2 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={globalSearchQuery}
+                    onChange={(e) => {
+                      setGlobalSearchQuery(e.target.value);
+                      setActiveSearchQuery(e.target.value);
+                    }}
+                    placeholder={t("sessions.searchAll")}
+                    className="h-8 pl-8 text-sm"
+                  />
+                </div>
+                {activeSearchQuery && searchResults.length > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {t("sessions.foundSessions", { count: searchResults.length })}
+                  </div>
+                )}
+                {activeSearchQuery && searchResults.length === 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {t("sessions.noSessionsFound")}
+                  </div>
+                )}
               </div>
-              {activeSearchQuery && searchResults.length > 0 && (
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {t("sessions.foundSessions", { count: searchResults.length })}
-                </div>
-              )}
-              {activeSearchQuery && searchResults.length === 0 && (
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {t("sessions.noSessionsFound")}
-                </div>
-              )}
+              <div className="flex-1 overflow-y-auto">
+                {sessions && sessionNames && (
+                  <SessionList
+                    sessions={sessions}
+                    sessionNames={sessionNames}
+                    selectedId={selectedSession}
+                    onSelect={handleSelectSession}
+                    searchQuery={activeSearchQuery}
+                    searchResults={searchResults.length > 0 ? searchResults : undefined}
+                    onResumeSession={handleResumeSession}
+                  />
+                )}
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              {sessions && sessionNames && (
-                <SessionList
-                  sessions={sessions}
-                  sessionNames={sessionNames}
-                  selectedId={selectedSession}
-                  onSelect={handleSelectSession}
-                  searchQuery={activeSearchQuery}
-                  searchResults={searchResults.length > 0 ? searchResults : undefined}
-                  onResumeSession={handleResumeSession}
-                />
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+          <button
+            className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-border w-6 h-6 flex items-center justify-center hover:bg-border/80"
+            onClick={() => setSessionCollapsed(true)}
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Column 3: Message view */}
       <div className="flex-1 flex flex-col min-w-[300px]">
