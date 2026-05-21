@@ -78,7 +78,12 @@ pub fn delete_custom_command(id: &str) -> Result<(), Box<dyn std::error::Error>>
     write_json(&path, &data)
 }
 
-pub fn open_in_terminal(project_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+    let claude_cmd = match resume_session_id {
+        Some(id) => format!("claude --resume {}", id),
+        None => "claude".to_string(),
+    };
+
     if cfg!(target_os = "windows") {
         let use_wt = std::process::Command::new("where")
             .arg("wt")
@@ -88,12 +93,13 @@ pub fn open_in_terminal(project_path: &str) -> Result<(), Box<dyn std::error::Er
 
         if use_wt {
             std::process::Command::new("wt")
-                .args(["-d", project_path, "--", "claude"])
+                .args(["-d", project_path, "--"])
+                .arg(&claude_cmd)
                 .creation_flags(0x00000008)
                 .spawn()?;
         } else {
             std::process::Command::new("cmd")
-                .args(["/K", &format!("cd /D \"{}\" && claude", project_path)])
+                .args(["/K", &format!("cd /D \"{}\" && {}", project_path, claude_cmd)])
                 .creation_flags(0x00000008)
                 .spawn()?;
         }
@@ -106,14 +112,14 @@ pub fn open_in_terminal(project_path: &str) -> Result<(), Box<dyn std::error::Er
         std::process::Command::new("osascript")
             .args([
                 "-e",
-                &format!("tell application \"Terminal\" to do script \"cd '{}' && claude\"", project_path),
+                &format!("tell application \"Terminal\" to do script \"cd '{}' && {}\"", project_path, claude_cmd),
             ])
             .spawn()?;
     } else {
         // Linux: try common terminal emulators
         let terminal = which_terminal()?;
         std::process::Command::new(terminal)
-            .args(["-e", "sh", "-c", &format!("cd '{}' && claude", project_path)])
+            .args(["-e", "sh", "-c", &format!("cd '{}' && {}", project_path, claude_cmd)])
             .spawn()?;
     }
     Ok(())

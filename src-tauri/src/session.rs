@@ -209,19 +209,24 @@ pub fn load_session(path: &Path) -> Option<Session> {
 }
 
 pub fn list_sessions(project_dir: &Path) -> Vec<Session> {
-    let mut sessions = Vec::new();
+    let mut sessions_with_time: Vec<(Session, std::time::SystemTime)> = Vec::new();
+
     if let Ok(entries) = std::fs::read_dir(project_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map(|e| e == "jsonl").unwrap_or(false) {
+            if path.extension().map(|ext| ext == "jsonl").unwrap_or(false) {
+                let mtime = path.metadata().ok()
+                    .and_then(|m| m.modified().ok())
+                    .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
                 if let Some(session) = load_session(&path) {
-                    sessions.push(session);
+                    sessions_with_time.push((session, mtime));
                 }
             }
         }
     }
-    sessions.sort_by(|a, b| b.started_at.cmp(&a.started_at));
-    sessions
+
+    sessions_with_time.sort_by(|a, b| b.1.cmp(&a.1));
+    sessions_with_time.into_iter().map(|(s, _)| s).collect()
 }
 
 #[cfg(test)]

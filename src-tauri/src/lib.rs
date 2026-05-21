@@ -143,8 +143,8 @@ fn delete_custom_command(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_in_terminal(project_path: String) -> Result<(), String> {
-    command::open_in_terminal(&project_path).map_err(|e| e.to_string())
+fn open_in_terminal(project_path: String, resume_session_id: Option<String>) -> Result<(), String> {
+    command::open_in_terminal(&project_path, resume_session_id.as_deref()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

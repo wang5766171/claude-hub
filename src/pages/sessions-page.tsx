@@ -6,7 +6,7 @@ import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Pencil, Search } from "lucide-react";
+import { MessageSquare, Pencil, Search, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { searchSessions } from "@/lib/session-search";
 import type { Session, Project, Message, SessionSearchResult } from "@/types";
@@ -59,6 +59,29 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     setSessionMessages([]);
     setGlobalSearchQuery("");
     setActiveSearchQuery("");
+  };
+
+  const handleResumeSession = async (sessionId: string, _sessionPath: string) => {
+    const project = projects?.find((p) => p.encoded_name === selectedProject);
+    if (!project) return;
+    await invokeCommand("open_in_terminal", {
+      projectPath: project.path,
+      resumeSessionId: sessionId,
+    });
+  };
+
+  const handleRefreshMessages = async () => {
+    if (selectedSession && selectedProject) {
+      try {
+        const msgs = await invokeCommand<Message[]>("get_session_messages", {
+          sessionId: selectedSession,
+          encodedName: selectedProject,
+        });
+        setSessionMessages(msgs);
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   if (projectsLoading) {
@@ -135,6 +158,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                   onSelect={handleSelectSession}
                   searchQuery={activeSearchQuery}
                   searchResults={searchResults.length > 0 ? searchResults : undefined}
+                  onResumeSession={handleResumeSession}
                 />
               )}
             </div>
@@ -160,7 +184,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
               </Button>
             </div>
             <div className="flex-1 min-h-0">
-              <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} />
+              <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} onRefresh={handleRefreshMessages} />
             </div>
           </>
         )}

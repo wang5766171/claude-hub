@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { User, Bot, Wrench, ChevronDown, ChevronRight, Search, ArrowDown } from "lucide-react";
+import { User, Bot, Wrench, ChevronDown, ChevronRight, Search, ArrowDown, RotateCw } from "lucide-react";
 import type { Message, ContentBlock } from "@/types";
 
 interface MessageViewProps {
   messages: Message[];
   initialSearchQuery?: string;
+  onRefresh?: () => void;
 }
 
 function formatTimestamp(ts: number | null): string {
@@ -170,7 +171,7 @@ function renderBlock(block: ContentBlock, query: string, dark?: boolean): React.
   }
 }
 
-export function MessageView({ messages, initialSearchQuery }: MessageViewProps) {
+export function MessageView({ messages, initialSearchQuery, onRefresh }: MessageViewProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || "");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -239,6 +240,11 @@ export function MessageView({ messages, initialSearchQuery }: MessageViewProps) 
         )}
         {searchQuery && matchIndices.length === 0 && (
           <span className="text-xs text-muted-foreground">{t("sessions.noResults")}</span>
+        )}
+        {onRefresh && (
+          <Button variant="ghost" size="icon-xs" onClick={onRefresh}>
+            <RotateCw className="h-3.5 w-3.5" />
+          </Button>
         )}
       </div>
 

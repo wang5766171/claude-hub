@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Clock } from "lucide-react";
+import { MessageSquare, Clock, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Session, SessionSearchResult } from "@/types";
 
@@ -11,9 +11,10 @@ interface SessionListProps {
   onSelect: (sessionId: string) => void;
   searchQuery?: string;
   searchResults?: SessionSearchResult[];
+  onResumeSession?: (sessionId: string, projectPath: string) => void;
 }
 
-export function SessionList({ sessions, sessionNames, selectedId, onSelect, searchQuery, searchResults }: SessionListProps) {
+export function SessionList({ sessions, sessionNames, selectedId, onSelect, searchQuery, searchResults, onResumeSession }: SessionListProps) {
   const { t } = useTranslation();
 
   const filteredSessions = useMemo(() => {
@@ -35,7 +36,7 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
         const result = resultMap.get(session.id);
 
         return (
-          <div key={session.id}>
+          <div key={session.id} className="group relative">
             <button
               onClick={() => onSelect(session.id)}
               className={cn(
@@ -54,21 +55,42 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
                   )}
                 </div>
               </div>
-              {result ? (
-                <span className="text-xs text-blue-600 font-medium shrink-0 ml-2">
-                  {result.matchCount} {t("sessions.matches")}
-                </span>
-              ) : (
-                <div className="flex items-center gap-2 text-xs shrink-0 ml-2">
-                  <span>{t("sessions.msgCount", { count: session.messages.length })}</span>
-                  {session.started_at && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(session.started_at).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                {result ? (
+                  <span className="text-xs text-blue-600 font-medium">
+                    {result.matchCount} {t("sessions.matches")}
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span>{t("sessions.msgCount", { count: session.messages.length })}</span>
+                    {session.started_at && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(session.started_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {onResumeSession && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent/70 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResumeSession(session.id, session.path);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        onResumeSession(session.id, session.path);
+                      }
+                    }}
+                  >
+                    <Terminal className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </div>
             </button>
             {result && result.previewText && (
               <div className="text-xs text-muted-foreground truncate px-3 pb-1.5 pl-9">
