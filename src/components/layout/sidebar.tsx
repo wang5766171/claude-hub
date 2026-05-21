@@ -21,7 +21,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     <aside className="flex w-52 flex-col border-r border-border bg-card">
       <div className="border-b border-border p-4">
         <h1 className="text-lg font-semibold">Claude Hub</h1>
-        <p className="text-xs text-muted-foreground">v0.1.0</p>
+        <p className="text-xs text-muted-foreground">v0.2.0</p>
       </div>
       <nav className="flex-1 p-2">
         {navItems.map(({ page, icon: Icon, labelKey }) => (
