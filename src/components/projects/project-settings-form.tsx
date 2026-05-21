@@ -19,8 +19,6 @@ const MODE_OPTIONS = [
   { value: "plan", label: "plan" },
 ];
 
-const HOOK_EVENTS = ["PreToolUse", "PostToolUse", "Notification", "Stop"];
-
 interface ProjectSettingsFormProps {
   projectPath: string;
 }
