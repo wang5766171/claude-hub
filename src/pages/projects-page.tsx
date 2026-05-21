@@ -7,7 +7,7 @@ import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import { AddProjectDialog } from "@/components/projects/add-project-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Project } from "@/types";
+import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectsPageProps {
   onViewSessions?: (encodedName: string) => void;
@@ -16,6 +16,7 @@ interface ProjectsPageProps {
 export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   const { t } = useTranslation();
   const { data: projects, loading, refetch } = useInvoke<Project[]>("scan_projects");
+  const { data: projectMetas, refetch: refetchMetas } = useInvoke<Record<string, ProjectMeta>>("load_project_metas");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
@@ -60,6 +61,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
               project={project}
               selected={selectedProject?.encoded_name === project.encoded_name}
               onClick={() => setSelectedProject(project)}
+              meta={projectMetas?.[project.encoded_name]}
             />
           ))}
         </div>
@@ -71,6 +73,8 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
           onClose={() => setSelectedProject(null)}
           onViewSessions={(name) => onViewSessions?.(name)}
           onRemoved={() => { setSelectedProject(null); refetch(); }}
+          projectMetas={projectMetas}
+          onUpdateMetas={refetchMetas}
         />
       )}
 

@@ -7,17 +7,20 @@ import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { ProjectSettingsForm } from "@/components/projects/project-settings-form";
+import { ProjectMetaEditor } from "@/components/projects/project-meta-editor";
 import { useInvoke } from "@/hooks/use-invoke";
-import type { Project } from "@/types";
+import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectDetailProps {
   project: Project;
   onClose: () => void;
   onViewSessions: (encodedName: string) => void;
   onRemoved?: () => void;
+  projectMetas?: Record<string, ProjectMeta>;
+  onUpdateMetas?: () => void;
 }
 
-export function ProjectDetail({ project, onClose, onViewSessions, onRemoved }: ProjectDetailProps) {
+export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, projectMetas, onUpdateMetas }: ProjectDetailProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"info" | "config">("info");
   const { data: claudeMd } = useInvoke<string | null>("load_claude_md", { projectPath: project.path });
@@ -37,7 +40,7 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved }: P
     <div className="fixed inset-y-0 right-0 z-10 w-[28rem] border-l border-border bg-card shadow-lg flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="font-semibold truncate">{project.name}</h2>
+        <h2 className="font-semibold truncate">{projectMetas?.[project.encoded_name]?.custom_name || project.name}</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -93,6 +96,16 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved }: P
                     {project.has_claude_md ? t("common.yes") : t("common.no")}
                   </span>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-3">
+                <ProjectMetaEditor
+                  encodedName={project.encoded_name}
+                  meta={projectMetas?.[project.encoded_name]}
+                  onUpdate={() => onUpdateMetas?.()}
+                />
               </CardContent>
             </Card>
 

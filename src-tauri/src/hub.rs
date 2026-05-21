@@ -188,3 +188,52 @@ pub fn delete_preset(id: &str) -> Result<(), Box<dyn std::error::Error>> {
     data.presets.retain(|p| p.id != id);
     write_json(&path, &data)
 }
+
+// --- ProjectMeta (custom names, tags, notes) ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProjectMeta {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProjectMetas {
+    #[serde(default)]
+    pub metas: HashMap<String, ProjectMeta>,
+}
+
+fn project_metas_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("project_meta.json"))
+}
+
+pub fn load_project_metas() -> Result<HashMap<String, ProjectMeta>, Box<dyn std::error::Error>> {
+    let path = project_metas_path()?;
+    if !path.exists() {
+        return Ok(HashMap::new());
+    }
+    let metas: ProjectMetas = read_json(&path)?;
+    Ok(metas.metas)
+}
+
+pub fn save_project_meta(encoded_name: &str, meta: ProjectMeta) -> Result<(), Box<dyn std::error::Error>> {
+    let path = project_metas_path()?;
+    let mut metas = if path.exists() {
+        read_json::<ProjectMetas>(&path)?
+    } else {
+        ProjectMetas::default()
+    };
+
+    // If meta is all None/default, remove the entry
+    if meta.custom_name.is_none() && meta.tags.is_none() && meta.notes.is_none() {
+        metas.metas.remove(encoded_name);
+    } else {
+        metas.metas.insert(encoded_name.to_string(), meta);
+    }
+
+    write_json(&path, &metas)
+}

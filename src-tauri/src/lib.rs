@@ -196,6 +196,16 @@ fn load_claude_md(project_path: String) -> Result<Option<String>, String> {
     project_config::load_claude_md(&project_path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn load_project_metas() -> Result<HashMap<String, hub::ProjectMeta>, String> {
+    hub::load_project_metas().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_project_meta(encoded_name: String, meta: hub::ProjectMeta) -> Result<(), String> {
+    hub::save_project_meta(&encoded_name, meta).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -244,6 +254,8 @@ pub fn run() {
             save_project_settings,
             save_project_settings_local,
             load_claude_md,
+            load_project_metas,
+            save_project_meta,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

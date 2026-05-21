@@ -7,6 +7,12 @@ export interface Project {
   has_claude_md: boolean;
 }
 
+export interface ProjectMeta {
+  custom_name?: string;
+  tags?: string[];
+  notes?: string;
+}
+
 export interface Message {
   role: string;
   content: ContentBlock[];

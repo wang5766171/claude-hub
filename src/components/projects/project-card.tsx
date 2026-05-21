@@ -2,16 +2,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import type { Project } from "@/types";
+import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectCardProps {
   project: Project;
   selected: boolean;
   onClick: () => void;
+  meta?: ProjectMeta;
 }
 
-export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
+export function ProjectCard({ project, selected, onClick, meta }: ProjectCardProps) {
   const { t } = useTranslation();
+  const displayName = meta?.custom_name || project.name;
+
   return (
     <Card
       className={cn(
@@ -22,17 +25,36 @@ export function ProjectCard({ project, selected, onClick }: ProjectCardProps) {
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-medium">{project.name}</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+            <h3 className="font-medium truncate">{displayName}</h3>
           </div>
           {project.has_claude_md && (
-            <FileText className="h-4 w-4 text-green-500" />
+            <FileText className="h-4 w-4 text-green-500 shrink-0" />
           )}
         </div>
+        {meta?.custom_name && (
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {project.name}
+          </p>
+        )}
         <p className="mt-1 truncate text-xs text-muted-foreground" title={project.path}>
           {project.path}
         </p>
+        {meta?.tags && meta.tags.length > 0 && (
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {meta.tags.slice(0, 2).map(tag => (
+              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-secondary text-secondary-foreground rounded">
+                {tag}
+              </span>
+            ))}
+            {meta.tags.length > 2 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-muted text-muted-foreground rounded">
+                +{meta.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
         <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
