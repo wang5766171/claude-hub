@@ -9,7 +9,7 @@ import { invokeCommand } from "@/hooks/use-invoke";
 import { ProjectSettingsForm } from "@/components/projects/project-settings-form";
 import { ProjectMetaEditor } from "@/components/projects/project-meta-editor";
 import { useInvoke } from "@/hooks/use-invoke";
-import type { Project, ProjectMeta } from "@/types";
+import type { Project, ProjectMeta, ProjectMergeInfo } from "@/types";
 
 interface ProjectDetailProps {
   project: Project;
@@ -18,9 +18,11 @@ interface ProjectDetailProps {
   onRemoved?: () => void;
   projectMetas?: Record<string, ProjectMeta>;
   onUpdateMetas?: () => void;
+  merges?: ProjectMergeInfo;
+  onSplit?: () => void;
 }
 
-export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, projectMetas, onUpdateMetas }: ProjectDetailProps) {
+export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, projectMetas, onUpdateMetas, merges, onSplit }: ProjectDetailProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"info" | "config">("info");
   const { data: claudeMd } = useInvoke<string | null>("load_claude_md", { projectPath: project.path });
@@ -133,6 +135,23 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, pro
                 <Trash2 className="mr-2 h-4 w-4" />
                 {t("projects.removeProject")}
               </Button>
+              {merges && merges[project.encoded_name] && merges[project.encoded_name].length > 0 && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      await invokeCommand("split_project", { primary: project.encoded_name });
+                      onSplit?.();
+                      onClose();
+                    } catch (err) {
+                      console.error("Failed to split project:", err);
+                    }
+                  }}
+                >
+                  拆分项目（{merges[project.encoded_name].length} 个子项目）
+                </Button>
+              )}
             </div>
           </>
         ) : (

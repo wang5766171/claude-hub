@@ -9,27 +9,69 @@ interface ProjectCardProps {
   selected: boolean;
   onClick: () => void;
   meta?: ProjectMeta;
+  managementMode?: boolean;
+  checked?: boolean;
+  disabled?: boolean;
+  onCheck?: () => void;
+  mergedCount?: number;
 }
 
-export function ProjectCard({ project, selected, onClick, meta }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  selected,
+  onClick,
+  meta,
+  managementMode,
+  checked,
+  disabled,
+  onCheck,
+  mergedCount,
+}: ProjectCardProps) {
   const { t } = useTranslation();
   const displayName = meta?.custom_name || project.name;
 
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-colors hover:border-primary/50",
-        selected && "border-primary ring-1 ring-primary/20"
+        "relative cursor-pointer transition-colors hover:border-primary/50",
+        selected && "border-primary ring-1 ring-primary/20",
+        disabled && managementMode && "opacity-50"
       )}
-      onClick={onClick}
+      onClick={managementMode ? undefined : onClick}
     >
+      {managementMode && (
+        <div
+          className="absolute top-2 left-2 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) onCheck?.();
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled={disabled}
+            className="h-4 w-4"
+          />
+        </div>
+      )}
+      {disabled && managementMode && (
+        <div className="absolute inset-0 bg-background/50 rounded-lg" />
+      )}
+      {mergedCount && mergedCount > 0 && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded">
+            +{mergedCount} merged
+          </span>
+        </div>
+      )}
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
             <h3 className="font-medium truncate">{displayName}</h3>
           </div>
-          {project.has_claude_md && (
+          {!mergedCount && project.has_claude_md && (
             <FileText className="h-4 w-4 text-green-500 shrink-0" />
           )}
         </div>

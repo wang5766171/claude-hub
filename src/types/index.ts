@@ -105,3 +105,7 @@ export interface ProjectSettings {
   env: Record<string, string> | null;
   model: string | null;
 }
+
+export interface ProjectMergeInfo {
+  [primary: string]: string[];
+}
