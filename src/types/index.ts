@@ -75,3 +75,26 @@ export interface CommandOutput {
   stderr: string;
   code: number | null;
 }
+
+export interface ProjectPermissions {
+  defaultMode: string | null;
+  allow: string[] | null;
+  deny: string[] | null;
+}
+
+export interface HookCommand {
+  type: string;
+  command: string;
+}
+
+export interface HookEntry {
+  matcher: string | null;
+  hooks: HookCommand[];
+}
+
+export interface ProjectSettings {
+  permissions: ProjectPermissions | null;
+  hooks: Record<string, HookEntry[]> | null;
+  env: Record<string, string> | null;
+  model: string | null;
+}

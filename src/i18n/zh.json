@@ -120,5 +120,23 @@
     "noOutput": "无输出",
     "builtIn": "内置命令",
     "custom": "自定义命令"
+  },
+  "projectConfig": {
+    "title": "项目配置",
+    "sharedSettings": "共享",
+    "localSettings": "本地",
+    "sharedDesc": "settings.json — 提交到版本控制，与团队共享",
+    "localDesc": "settings.local.json — 本地覆盖，不提交到版本控制",
+    "permissions": "权限",
+    "defaultMode": "默认模式",
+    "allowList": "允许列表",
+    "denyList": "拒绝列表",
+    "addPattern": "添加",
+    "patternPlaceholder": "例如：Bash(cargo build)",
+    "hooks": "钩子",
+    "noHooks": "未配置钩子",
+    "envVars": "环境变量",
+    "info": "信息",
+    "config": "配置"
   }
 }

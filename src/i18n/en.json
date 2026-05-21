@@ -120,5 +120,23 @@
     "noOutput": "No output",
     "builtIn": "Built-in Commands",
     "custom": "Custom Commands"
+  },
+  "projectConfig": {
+    "title": "Project Configuration",
+    "sharedSettings": "Shared",
+    "localSettings": "Local",
+    "sharedDesc": "settings.json — committed to version control, shared with team",
+    "localDesc": "settings.local.json — local overrides, not committed to version control",
+    "permissions": "Permissions",
+    "defaultMode": "Default Mode",
+    "allowList": "Allow List",
+    "denyList": "Deny List",
+    "addPattern": "Add",
+    "patternPlaceholder": "e.g., Bash(cargo build)",
+    "hooks": "Hooks",
+    "noHooks": "No hooks configured",
+    "envVars": "Environment Variables",
+    "info": "Info",
+    "config": "Config"
   }
 }

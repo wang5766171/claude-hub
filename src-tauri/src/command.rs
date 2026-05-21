@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomCommand {
     pub id: String,
@@ -73,6 +76,61 @@ pub fn delete_custom_command(id: &str) -> Result<(), Box<dyn std::error::Error>>
     let mut data: Commands = read_json(&path)?;
     data.commands.retain(|c| c.id != id);
     write_json(&path, &data)
+}
+
+pub fn open_in_terminal(project_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    if cfg!(target_os = "windows") {
+        let use_wt = std::process::Command::new("where")
+            .arg("wt")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+
+        if use_wt {
+            std::process::Command::new("wt")
+                .args(["-d", project_path, "--", "claude"])
+                .creation_flags(0x00000008)
+                .spawn()?;
+        } else {
+            std::process::Command::new("cmd")
+                .args(["/K", &format!("cd /D \"{}\" && claude", project_path)])
+                .creation_flags(0x00000008)
+                .spawn()?;
+        }
+    } else if cfg!(target_os = "macos") {
+        std::process::Command::new("open")
+            .args(["-a", "Terminal", project_path])
+            .spawn()?;
+        // Small delay then run claude via AppleScript
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::process::Command::new("osascript")
+            .args([
+                "-e",
+                &format!("tell application \"Terminal\" to do script \"cd '{}' && claude\"", project_path),
+            ])
+            .spawn()?;
+    } else {
+        // Linux: try common terminal emulators
+        let terminal = which_terminal()?;
+        std::process::Command::new(terminal)
+            .args(["-e", "sh", "-c", &format!("cd '{}' && claude", project_path)])
+            .spawn()?;
+    }
+    Ok(())
+}
+
+fn which_terminal() -> Result<&'static str, Box<dyn std::error::Error>> {
+    for term in &["gnome-terminal", "konsole", "xfce4-terminal", "xterm"] {
+        if std::process::Command::new("which")
+            .arg(term)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return Ok(term);
+        }
+    }
+    Ok("xterm")
 }
 
 pub fn execute_command(command: &str, cwd: Option<&str>) -> Result<CommandOutput, Box<dyn std::error::Error>> {

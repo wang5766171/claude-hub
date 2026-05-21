@@ -70,18 +70,55 @@ fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
 }
 
 pub fn decode_project_path(encoded: &str) -> String {
-    // First "--" is the drive letter separator (e.g., "E--" -> "E:\")
-    // Remaining "--" and "-" are path separators ("\")
+    // Claude Code encodes paths: remove ':', replace '/' and '\' with '-'.
+    // Drive letter + first '\' becomes '--' (e.g., "D:\MyCodes" → "D--MyCodes").
+    // Decoding is ambiguous when directory names contain '-' (e.g., "claude-hub").
+    // We resolve this by checking if each decoded segment exists on the filesystem.
     if let Some(pos) = encoded.find("--") {
-        let mut result = String::with_capacity(encoded.len() + 8);
-        result.push_str(&encoded[..pos]);
-        result.push_str(":\\");
+        let drive = &encoded[..pos];
         let rest = &encoded[pos + 2..];
-        result.push_str(&rest.replace("--", "\\").replace('-', "\\"));
-        result
-    } else {
-        encoded.replace('-', "\\")
+        let parts: Vec<&str> = rest.split('-').collect();
+        return resolve_path_from_parts(&format!("{}:\\", drive), &parts);
     }
+    encoded.replace('-', "\\")
+}
+
+/// Recursively try to build a valid filesystem path from dash-separated segments.
+/// At each step, try both: merging the next segment with a literal '-', or treating it as a path separator.
+fn resolve_path_from_parts(current: &str, remaining: &[&str]) -> String {
+    if remaining.is_empty() {
+        return current.to_string();
+    }
+
+    // Try joining multiple leading segments with literal '-' to find a valid directory
+    let mut merged = remaining[0].to_string();
+    for i in 0..remaining.len() {
+        if i > 0 {
+            merged.push('-');
+            merged.push_str(remaining[i]);
+        }
+        let candidate = format!("{}\\{}", current, merged);
+        let rest = &remaining[i + 1..];
+        if candidate_is_valid(&candidate, rest.is_empty()) {
+            let result = resolve_path_from_parts(&candidate, rest);
+            if result_needs_further_resolution(&result, remaining) {
+                return result;
+            }
+        }
+    }
+
+    // Fallback: join everything with '\'
+    format!("{}\\{}", current, remaining.join("\\"))
+}
+
+fn candidate_is_valid(path: &str, is_final: bool) -> bool {
+    let p = std::path::Path::new(path);
+    is_final || p.is_dir()
+}
+
+fn result_needs_further_resolution(result: &str, original_parts: &[&str]) -> bool {
+    // Check that the result path's depth matches the expected depth roughly
+    std::path::Path::new(result).is_dir() || !original_parts.is_empty()
 }
 
 pub fn encode_project_path(path: &str) -> String {

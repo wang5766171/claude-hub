@@ -4,6 +4,7 @@ mod session;
 mod history;
 mod hub;
 mod command;
+mod project_config;
 
 use std::collections::HashMap;
 
@@ -142,8 +143,38 @@ fn delete_custom_command(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_in_terminal(project_path: String) -> Result<(), String> {
+    command::open_in_terminal(&project_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn execute_command(command: String, cwd: Option<String>) -> Result<command::CommandOutput, String> {
     command::execute_command(&command, cwd.as_deref()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn load_project_settings(project_path: String) -> Result<project_config::ProjectSettings, String> {
+    project_config::load_project_settings(&project_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn load_project_settings_local(project_path: String) -> Result<project_config::ProjectSettings, String> {
+    project_config::load_project_settings_local(&project_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_project_settings(project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
+    project_config::save_project_settings(&project_path, &settings).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_project_settings_local(project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
+    project_config::save_project_settings_local(&project_path, &settings).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn load_claude_md(project_path: String) -> Result<Option<String>, String> {
+    project_config::load_claude_md(&project_path).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -175,7 +206,13 @@ pub fn run() {
             list_custom_commands,
             save_custom_command,
             delete_custom_command,
+            open_in_terminal,
             execute_command,
+            load_project_settings,
+            load_project_settings_local,
+            save_project_settings,
+            save_project_settings_local,
+            load_claude_md,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
