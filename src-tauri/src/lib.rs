@@ -7,6 +7,7 @@ mod command;
 mod project_config;
 
 use std::collections::HashMap;
+use tauri::Manager;
 
 #[tauri::command]
 fn scan_projects() -> Vec<project::Project> {
@@ -128,6 +129,24 @@ fn save_language(lang: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn load_always_on_top() -> Result<bool, String> {
+    hub::load_always_on_top().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn toggle_always_on_top(app: tauri::AppHandle) -> Result<bool, String> {
+    let current = hub::load_always_on_top().map_err(|e| e.to_string())?;
+    let new_value = !current;
+
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_always_on_top(new_value).map_err(|e| e.to_string())?;
+    }
+
+    hub::save_always_on_top(new_value).map_err(|e| e.to_string())?;
+    Ok(new_value)
+}
+
+#[tauri::command]
 fn list_custom_commands() -> Result<Vec<command::CustomCommand>, String> {
     command::list_custom_commands().map_err(|e| e.to_string())
 }
@@ -181,6 +200,16 @@ fn load_claude_md(project_path: String) -> Result<Option<String>, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            if let Ok(pinned) = hub::load_always_on_top() {
+                if pinned {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.set_always_on_top(true);
+                    }
+                }
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             scan_projects,
             add_project,
@@ -203,6 +232,8 @@ pub fn run() {
             import_config,
             load_language,
             save_language,
+            load_always_on_top,
+            toggle_always_on_top,
             list_custom_commands,
             save_custom_command,
             delete_custom_command,

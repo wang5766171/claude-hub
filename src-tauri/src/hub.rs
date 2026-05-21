@@ -59,11 +59,12 @@ pub fn delete_session_name(session_id: String) -> Result<(), Box<dyn std::error:
     write_json(&path, &data)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AppState {
     pub last_page: Option<String>,
     pub last_project: Option<String>,
     pub language: Option<String>,
+    pub always_on_top: Option<bool>,
 }
 
 fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -73,7 +74,7 @@ fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
 pub fn load_state() -> Result<AppState, Box<dyn std::error::Error>> {
     let path = state_path()?;
     if !path.exists() {
-        return Ok(AppState { last_page: None, last_project: None, language: None });
+        return Ok(AppState::default());
     }
     read_json(&path)
 }
@@ -89,8 +90,19 @@ pub fn load_language() -> Result<Option<String>, Box<dyn std::error::Error>> {
 }
 
 pub fn save_language(lang: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut state = load_state().unwrap_or(AppState { last_page: None, last_project: None, language: None });
+    let mut state = load_state().unwrap_or_default();
     state.language = Some(lang.to_string());
+    save_state(&state)
+}
+
+pub fn load_always_on_top() -> Result<bool, Box<dyn std::error::Error>> {
+    let state = load_state();
+    Ok(state.unwrap_or_default().always_on_top.unwrap_or(false))
+}
+
+pub fn save_always_on_top(value: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = load_state().unwrap_or_default();
+    state.always_on_top = Some(value);
     save_state(&state)
 }
 
