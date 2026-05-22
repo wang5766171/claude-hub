@@ -28,8 +28,6 @@ export function ChatInput({
   projectPath,
   disabled = false,
   onMessageSent,
-  onStreamChunk,
-  onStreamComplete,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
@@ -142,17 +140,13 @@ export function ChatInput({
       setActiveSessionId(chatSession.session_id);
       if (onMessageSent) onMessageSent(chatSession.session_id);
 
-      // Stream events are handled by the parent via listen("chat-stream")
-      // We just listen for the result event to clear our own sending state
+      // Listen for result to clear our own sending state
+      // Stream display is handled by sessions-page's global listener
       const unlisten = await listen<StreamChunk>("chat-stream", (event) => {
-        if (event.payload.session_id === chatSession.session_id) {
-          if (onStreamChunk) onStreamChunk(event.payload);
-          if (event.payload.event_type === "result") {
-            setSending(false);
-            setActiveSessionId(null);
-            if (onStreamComplete) onStreamComplete();
-            unlisten();
-          }
+        if (event.payload.session_id === chatSession.session_id && event.payload.event_type === "result") {
+          setSending(false);
+          setActiveSessionId(null);
+          unlisten();
         }
       });
 

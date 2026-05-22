@@ -40,6 +40,30 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [streamingSession, setStreamingSession] = useState<string | null>(null);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
 
+  // Register stream listener at mount so we don't miss early events
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    listen<StreamChunk>("chat-stream", (event) => {
+      const chunk = event.payload;
+      if (chunk.session_id === streamingSession) {
+        setStreamChunks(prev => [...prev, chunk]);
+        if (chunk.event_type === "result") {
+          setStreamingSession(null);
+          // Use setTimeout to allow state to settle before refresh
+          setTimeout(() => {
+            if (selectedSession && selectedProject) {
+              invokeCommand<Message[]>("get_session_messages", {
+                sessionId: selectedSession,
+                encodedName: selectedProject,
+              }).then(setSessionMessages).catch(console.error);
+            }
+          }, 500);
+        }
+      }
+    }).then(fn => { unlisten = fn; });
+    return () => { if (unlisten) unlisten(); };
+  }, [streamingSession, selectedSession, selectedProject]);
+
   const { data: sessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
     selectedProject ? { encodedName: selectedProject } : undefined
@@ -299,14 +323,6 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
               sessionId={selectedSession}
               projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
               onMessageSent={(sid) => setStreamingSession(sid)}
-              onStreamChunk={(chunk) => {
-                setStreamChunks(prev => [...prev, chunk]);
-              }}
-              onStreamComplete={() => {
-                setStreamingSession(null);
-                setStreamChunks([]);
-                handleRefreshMessages();
-              }}
             />
           </>
         )}
