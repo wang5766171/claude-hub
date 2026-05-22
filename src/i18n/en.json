@@ -66,7 +66,14 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "chatPlaceholder": "Type a message to send to the current session...",
+    "chatPlaceholderSingleImage": "Describe what you want Claude to do with this image, or just send",
+    "chatPlaceholderMultiImage": "Images are labeled in upload order (Image 1, Image 2...). Briefly describe each for accurate AI understanding",
+    "send": "Send",
+    "stop": "Stop",
+    "attachImage": "Attach image",
+    "newSession": "New session"
   },
   "config": {
     "title": "Configuration",

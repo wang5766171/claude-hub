@@ -1,15 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { SessionList } from "@/components/sessions/session-list";
 import { MessageView } from "@/components/sessions/message-view";
 import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog";
+import { ChatInput } from "@/components/sessions/chat-input";
+import { StreamingMessage } from "@/components/sessions/streaming-message";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import { searchSessions } from "@/lib/session-search";
-import type { Session, Project, Message, SessionSearchResult } from "@/types";
+import type { Session, Project, Message, SessionSearchResult, StreamChunk } from "@/types";
 
 interface SessionsPageProps {
   initialProject?: string | null;
@@ -33,6 +36,8 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [sessionCollapsed, setSessionCollapsed] = useState(false);
+  const [streamChunks, setStreamChunks] = useState<StreamChunk[]>([]);
+  const [streamingSession, setStreamingSession] = useState<string | null>(null);
 
   const { data: sessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
@@ -88,6 +93,25 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
       }
     }
   };
+
+  useEffect(() => {
+    let unlistenFn: (() => void) | null = null;
+    listen<StreamChunk>("chat-stream", (event) => {
+      const chunk = event.payload;
+      if (chunk.session_id === streamingSession || chunk.session_id.startsWith("pending-")) {
+        setStreamChunks((prev) => [...prev, chunk]);
+        if (chunk.event_type === "result") {
+          setStreamingSession(null);
+          handleRefreshMessages();
+        }
+      }
+    }).then((fn) => {
+      unlistenFn = fn;
+    });
+    return () => {
+      if (unlistenFn) unlistenFn();
+    };
+  }, [streamingSession]);
 
   if (projectsLoading) {
     return <Skeleton className="h-64" />;
@@ -154,17 +178,30 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
           ) : (
             <div className="flex flex-col h-full">
               <div className="px-3 py-2 border-b border-border">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={globalSearchQuery}
-                    onChange={(e) => {
-                      setGlobalSearchQuery(e.target.value);
-                      setActiveSearchQuery(e.target.value);
+                <div className="flex items-center gap-1.5">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={globalSearchQuery}
+                      onChange={(e) => {
+                        setGlobalSearchQuery(e.target.value);
+                        setActiveSearchQuery(e.target.value);
+                      }}
+                      placeholder={t("sessions.searchAll")}
+                      className="h-8 pl-8 text-sm"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => {
+                      setSelectedSession(null);
+                      setSessionMessages([]);
                     }}
-                    placeholder={t("sessions.searchAll")}
-                    className="h-8 pl-8 text-sm"
-                  />
+                    title={t("sessions.newSession")}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
                 {activeSearchQuery && searchResults.length > 0 && (
                   <div className="mt-1 text-xs text-muted-foreground">
@@ -201,7 +238,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
         </div>
       )}
 
-      {/* Column 3: Message view */}
+      {/* Column 3: Message view + Chat input */}
       <div className="flex-1 flex flex-col min-w-[300px]">
         {!selectedSession || !currentSession ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -221,6 +258,24 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
             <div className="flex-1 min-h-0">
               <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} onRefresh={handleRefreshMessages} />
             </div>
+          </>
+        )}
+        {selectedProject && (
+          <>
+            {streamingSession && streamChunks.length > 0 && (
+              <StreamingMessage chunks={streamChunks} isComplete={!streamingSession} />
+            )}
+            <ChatInput
+              sessionId={selectedSession}
+              projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
+              onStreamChunk={(chunk) => {
+                if (!streamingSession) setStreamingSession(chunk.session_id);
+              }}
+              onStreamComplete={() => {
+                setStreamChunks([]);
+                handleRefreshMessages();
+              }}
+            />
           </>
         )}
       </div>

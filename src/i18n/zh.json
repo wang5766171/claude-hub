@@ -66,7 +66,14 @@
     "expand": "展开",
     "collapse": "收起",
     "copy": "复制",
-    "copied": "已复制"
+    "copied": "已复制",
+    "chatPlaceholder": "输入消息发送到当前会话...",
+    "chatPlaceholderSingleImage": "描述你希望 Claude 对这张图片做什么，或直接发送",
+    "chatPlaceholderMultiImage": "已按上传顺序标注图片（图片1、图片2...），建议简要说明各图片用途，以便 AI 准确理解",
+    "send": "发送",
+    "stop": "停止",
+    "attachImage": "添加图片",
+    "newSession": "新建会话"
   },
   "config": {
     "title": "配置管理",
