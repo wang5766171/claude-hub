@@ -21,6 +21,62 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PermissionsConfig {
+    pub allow: Option<Vec<String>>,
+    pub deny: Option<Vec<String>>,
+    #[serde(rename = "defaultMode")]
+    pub default_mode: Option<String>,
+    #[serde(rename = "additionalDirectories")]
+    pub additional_directories: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServerConfig {
+    pub command: Option<String>,
+    pub args: Option<Vec<String>>,
+    pub env: Option<std::collections::HashMap<String, serde_json::Value>>,
+    pub cwd: Option<String>,
+    #[serde(rename = "type")]
+    pub server_type: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookAction {
+    #[serde(rename = "type")]
+    pub action_type: String,
+    pub command: Option<String>,
+    pub timeout: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookMatcher {
+    pub matcher: Option<String>,
+    pub hooks: Vec<HookAction>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SandboxConfig {
+    pub enabled: Option<bool>,
+    #[serde(rename = "allowCommand")]
+    pub allow_command: Option<Vec<String>>,
+    #[serde(rename = "denyCommand")]
+    pub deny_command: Option<Vec<String>>,
+    #[serde(rename = "allowPath")]
+    pub allow_path: Option<Vec<String>>,
+    #[serde(rename = "denyPath")]
+    pub deny_path: Option<Vec<String>>,
+    pub network: Option<String>,
+    pub profile: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContextCompactionConfig {
+    pub threshold: Option<f64>,
+    pub method: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ClaudeConfig {
     pub model: Option<String>,
     #[serde(deserialize_with = "deserialize_flex_env")]
@@ -37,6 +93,42 @@ pub struct ClaudeConfig {
     pub extra_known_marketplaces: Option<serde_json::Value>,
 
     pub theme: Option<String>,
+
+    #[serde(rename = "permissions")]
+    pub permissions: Option<PermissionsConfig>,
+
+    #[serde(rename = "mcpServers")]
+    pub mcp_servers: Option<std::collections::HashMap<String, McpServerConfig>>,
+
+    #[serde(rename = "apiProvider")]
+    pub api_provider: Option<String>,
+
+    #[serde(rename = "smallModel")]
+    pub small_model: Option<String>,
+
+    #[serde(rename = "largeModel")]
+    pub large_model: Option<String>,
+
+    #[serde(rename = "allowedTools")]
+    pub allowed_tools: Option<Vec<String>>,
+
+    #[serde(rename = "disallowedTools")]
+    pub disallowed_tools: Option<Vec<String>>,
+
+    #[serde(rename = "hooks")]
+    pub hooks: Option<std::collections::HashMap<String, Vec<HookMatcher>>>,
+
+    #[serde(rename = "sandbox")]
+    pub sandbox: Option<SandboxConfig>,
+
+    #[serde(rename = "verbose")]
+    pub verbose: Option<bool>,
+
+    #[serde(rename = "maxTurns")]
+    pub max_turns: Option<u64>,
+
+    #[serde(rename = "contextCompaction")]
+    pub context_compaction: Option<ContextCompactionConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
