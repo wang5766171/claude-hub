@@ -326,3 +326,52 @@ pub fn resolve_primary(secondary: &str) -> Result<Option<String>, Box<dyn std::e
     }
     Ok(None)
 }
+
+// --- Config Templates ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfigTemplate {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub config: crate::config::ClaudeConfig,
+}
+
+pub fn list_config_templates() -> Vec<ConfigTemplate> {
+    vec![
+        ConfigTemplate {
+            id: "default-dev".into(),
+            name: "默认开发模式".into(),
+            description: "标准权限模式，无额外限制".into(),
+            config: default_dev_config(),
+        },
+        ConfigTemplate {
+            id: "strict-security".into(),
+            name: "严格安全模式".into(),
+            description: "启用沙箱，拒绝敏感操作，要求确认".into(),
+            config: strict_security_config(),
+        },
+        ConfigTemplate {
+            id: "unrestricted".into(),
+            name: "无限制模式".into(),
+            description: "绕过所有权限检查，自动批准所有操作".into(),
+            config: unrestricted_config(),
+        },
+    ]
+}
+
+fn default_dev_config() -> crate::config::ClaudeConfig {
+    serde_json::from_str(r#"{"permissions":{"defaultMode":"default"},"apiProvider":"anthropic"}"#).unwrap_or_default()
+}
+
+fn strict_security_config() -> crate::config::ClaudeConfig {
+    serde_json::from_str(
+        r#"{"permissions":{"defaultMode":"default","deny":["Bash(rm -rf *)","Bash(curl *| *)","Write(/etc/*)"]},"sandbox":{"enabled":true,"network":"ask"}}"#,
+    ).unwrap_or_default()
+}
+
+fn unrestricted_config() -> crate::config::ClaudeConfig {
+    serde_json::from_str(
+        r#"{"permissions":{"defaultMode":"bypassPermissions","allow":["*"]},"skipDangerousModePermissionPrompt":true}"#,
+    ).unwrap_or_default()
+}

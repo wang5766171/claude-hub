@@ -268,6 +268,11 @@ fn get_merged_secondaries(primary: String) -> Result<Vec<String>, String> {
     hub::get_merged_secondaries(&primary).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn list_config_templates() -> Result<Vec<hub::ConfigTemplate>, String> {
+    Ok(hub::list_config_templates())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -324,6 +329,7 @@ pub fn run() {
             split_project,
             get_project_merges,
             get_merged_secondaries,
+            list_config_templates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
