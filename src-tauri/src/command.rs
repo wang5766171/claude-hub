@@ -85,21 +85,21 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
     };
 
     if cfg!(target_os = "windows") {
-        // Try Windows Terminal first (creates visible window)
-        let has_wt = std::process::Command::new("wt")
-            .args(["--version"])
+        // Check if Windows Terminal is available (use "where" to avoid dialog popup)
+        let has_wt = std::process::Command::new("cmd")
+            .args(["/C", "where wt >nul 2>nul"])
+            .creation_flags(0x00000008)
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false);
 
         if has_wt {
-            let child = std::process::Command::new("wt")
-                .args(["-d", project_path, "--", "cmd", "/K", &claude_cmd])
-                .creation_flags(0x00000008) // CREATE_NO_WINDOW only for wt launcher
+            let child = std::process::Command::new("cmd")
+                .args(["/C", &format!("wt -d \"{}\" -- cmd /K {}", project_path, claude_cmd)])
+                .creation_flags(0x00000008)
                 .spawn()?;
             Ok(child.id())
         } else {
-            // Fallback: cmd without CREATE_NO_WINDOW so window is visible
             let child = std::process::Command::new("cmd")
                 .args(["/K", &format!("cd /D \"{}\" && {}", project_path, claude_cmd)])
                 .spawn()?;

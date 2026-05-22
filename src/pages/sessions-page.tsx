@@ -298,10 +298,12 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
             <ChatInput
               sessionId={selectedSession}
               projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
+              onMessageSent={(sid) => setStreamingSession(sid)}
               onStreamChunk={(chunk) => {
-                if (!streamingSession) setStreamingSession(chunk.session_id);
+                setStreamChunks(prev => [...prev, chunk]);
               }}
               onStreamComplete={() => {
+                setStreamingSession(null);
                 setStreamChunks([]);
                 handleRefreshMessages();
               }}
