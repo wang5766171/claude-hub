@@ -73,7 +73,8 @@
     "send": "发送",
     "stop": "停止",
     "attachImage": "添加图片",
-    "newSession": "新建会话"
+    "newSession": "新建会话",
+    "resuming": "正在打开终端..."
   },
   "config": {
     "title": "配置管理",

@@ -38,6 +38,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [sessionCollapsed, setSessionCollapsed] = useState(false);
   const [streamChunks, setStreamChunks] = useState<StreamChunk[]>([]);
   const [streamingSession, setStreamingSession] = useState<string | null>(null);
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
 
   const { data: sessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
@@ -69,15 +70,34 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   };
 
   const handleResumeSession = async (sessionId: string, _sessionPath: string) => {
-    // Find the session to get its actual project_path (may differ from selectedProject for merged projects)
-    const session = sessions?.find(s => s.id === sessionId);
-    const project = projects?.find((p) => p.encoded_name === selectedProject);
-    const cwd = session?.project_path || project?.path;
-    if (!cwd) return;
-    await invokeCommand("open_in_terminal", {
-      projectPath: cwd,
-      resumeSessionId: sessionId,
-    });
+    setLoadingSessionId(sessionId);
+    try {
+      // Check if terminal is already open
+      const existing = await invokeCommand<{ pid: number; project_path: string; started_at: string } | null>("get_terminal_session", { sessionId });
+      if (existing) {
+        // Terminal already open — clear loading
+        setLoadingSessionId(null);
+        return;
+      }
+      // No existing terminal, open new one
+      const session = sessions?.find(s => s.id === sessionId);
+      const project = projects?.find((p) => p.encoded_name === selectedProject);
+      const cwd = session?.project_path || project?.path;
+      if (!cwd) return;
+      const pid = await invokeCommand<number>("open_in_terminal", {
+        projectPath: cwd,
+        resumeSessionId: sessionId,
+      });
+      await invokeCommand("register_terminal_session", {
+        sessionId,
+        pid,
+        projectPath: cwd,
+      });
+    } catch (err) {
+      console.error("Failed to resume session:", err);
+    } finally {
+      setLoadingSessionId(null);
+    }
   };
 
   const handleRefreshMessages = async () => {
@@ -224,6 +244,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                     searchQuery={activeSearchQuery}
                     searchResults={searchResults.length > 0 ? searchResults : undefined}
                     onResumeSession={handleResumeSession}
+                    loadingSessionId={loadingSessionId}
                   />
                 )}
               </div>

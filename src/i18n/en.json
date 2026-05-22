@@ -73,7 +73,8 @@
     "send": "Send",
     "stop": "Stop",
     "attachImage": "Attach image",
-    "newSession": "New session"
+    "newSession": "New session",
+    "resuming": "Opening terminal..."
   },
   "config": {
     "title": "Configuration",

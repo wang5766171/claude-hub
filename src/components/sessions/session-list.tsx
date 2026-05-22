@@ -12,9 +12,10 @@ interface SessionListProps {
   searchQuery?: string;
   searchResults?: SessionSearchResult[];
   onResumeSession?: (sessionId: string, projectPath: string) => void;
+  loadingSessionId?: string | null;
 }
 
-export function SessionList({ sessions, sessionNames, selectedId, onSelect, searchQuery, searchResults, onResumeSession }: SessionListProps) {
+export function SessionList({ sessions, sessionNames, selectedId, onSelect, searchQuery, searchResults, onResumeSession, loadingSessionId }: SessionListProps) {
   const { t } = useTranslation();
 
   const filteredSessions = useMemo(() => {
@@ -71,23 +72,32 @@ export function SessionList({ sessions, sessionNames, selectedId, onSelect, sear
                   <span className="text-xs">{t("sessions.msgCount", { count: session.messages.length })}</span>
                 )}
                 {onResumeSession && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent/70 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResumeSession(session.id, session.path);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
+                  loadingSessionId === session.id ? (
+                    <span
+                      className="inline-flex items-center justify-center p-0.5"
+                      title={t("sessions.resuming")}
+                    >
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                    </span>
+                  ) : (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent/70 cursor-pointer"
+                      onClick={(e) => {
                         e.stopPropagation();
                         onResumeSession(session.id, session.path);
-                      }
-                    }}
-                  >
-                    <Terminal className="h-3.5 w-3.5" />
-                  </span>
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          onResumeSession(session.id, session.path);
+                        }
+                      }}
+                    >
+                      <Terminal className="h-3.5 w-3.5" />
+                    </span>
+                  )
                 )}
               </div>
             </button>
