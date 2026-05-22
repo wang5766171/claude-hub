@@ -78,33 +78,21 @@ pub fn delete_custom_command(id: &str) -> Result<(), Box<dyn std::error::Error>>
     write_json(&path, &data)
 }
 
-pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> Result<u32, Box<dyn std::error::Error>> {
     let claude_cmd = match resume_session_id {
         Some(id) => format!("claude --resume {}", id),
         None => "claude".to_string(),
     };
 
     if cfg!(target_os = "windows") {
-        let use_wt = std::process::Command::new("where")
-            .arg("wt")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-
-        if use_wt {
-            std::process::Command::new("wt")
-                .args(["-d", project_path, "--", "cmd", "/K"])
-                .arg(&claude_cmd)
-                .creation_flags(0x00000008)
-                .spawn()?;
-        } else {
-            std::process::Command::new("cmd")
-                .args(["/K", &format!("cd /D \"{}\" && {}", project_path, claude_cmd)])
-                .creation_flags(0x00000008)
-                .spawn()?;
-        }
+        // Use cmd.exe directly so we can track the child PID
+        let child = std::process::Command::new("cmd")
+            .args(["/C", &format!("cd /D \"{}\" && {}", project_path, claude_cmd)])
+            .creation_flags(0x00000008) // CREATE_NO_WINDOW
+            .spawn()?;
+        Ok(child.id())
     } else if cfg!(target_os = "macos") {
-        std::process::Command::new("open")
+        let child = std::process::Command::new("open")
             .args(["-a", "Terminal", project_path])
             .spawn()?;
         // Small delay then run claude via AppleScript
@@ -115,14 +103,15 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
                 &format!("tell application \"Terminal\" to do script \"cd '{}' && {}\"", project_path, claude_cmd),
             ])
             .spawn()?;
+        Ok(child.id())
     } else {
         // Linux: try common terminal emulators
         let terminal = which_terminal()?;
-        std::process::Command::new(terminal)
+        let child = std::process::Command::new(terminal)
             .args(["-e", "sh", "-c", &format!("cd '{}' && {}", project_path, claude_cmd)])
             .spawn()?;
+        Ok(child.id())
     }
-    Ok(())
 }
 
 fn which_terminal() -> Result<&'static str, Box<dyn std::error::Error>> {

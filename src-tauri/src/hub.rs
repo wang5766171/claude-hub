@@ -327,6 +327,99 @@ pub fn resolve_primary(secondary: &str) -> Result<Option<String>, Box<dyn std::e
     Ok(None)
 }
 
+// --- Terminal Session Tracking ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TerminalSessionInfo {
+    pub pid: u32,
+    pub project_path: String,
+    pub started_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct TerminalSessions {
+    pub sessions: HashMap<String, TerminalSessionInfo>,
+}
+
+fn terminal_sessions_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("terminal_sessions.json"))
+}
+
+pub fn register_terminal_session(
+    session_id: String,
+    pid: u32,
+    project_path: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let path = terminal_sessions_path()?;
+    let mut sessions: TerminalSessions = if path.exists() {
+        read_json(&path)?
+    } else {
+        TerminalSessions::default()
+    };
+    sessions.sessions.insert(session_id, TerminalSessionInfo {
+        pid,
+        project_path,
+        started_at: chrono::Utc::now().to_rfc3339(),
+    });
+    write_json(&path, &sessions)
+}
+
+pub fn get_terminal_session(session_id: &str) -> Result<Option<TerminalSessionInfo>, Box<dyn std::error::Error>> {
+    let path = terminal_sessions_path()?;
+    let mut sessions: TerminalSessions = if path.exists() {
+        read_json(&path)?
+    } else {
+        TerminalSessions::default()
+    };
+    if let Some(info) = sessions.sessions.get(session_id).cloned() {
+        if is_process_alive(info.pid) {
+            Ok(Some(info))
+        } else {
+            sessions.sessions.remove(session_id);
+            write_json(&path, &sessions)?;
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+fn is_process_alive(pid: u32) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {}", pid), "/NH"])
+            .output()
+            .map(|o| {
+                let out = String::from_utf8_lossy(&o.stdout);
+                out.contains(&pid.to_string())
+            })
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::process::Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+}
+
+pub fn cleanup_dead_sessions() -> Result<u32, Box<dyn std::error::Error>> {
+    let path = terminal_sessions_path()?;
+    let mut sessions: TerminalSessions = if path.exists() {
+        read_json(&path)?
+    } else {
+        TerminalSessions::default()
+    };
+    let before = sessions.sessions.len();
+    sessions.sessions.retain(|_, info| is_process_alive(info.pid));
+    let removed = (before - sessions.sessions.len()) as u32;
+    write_json(&path, &sessions)?;
+    Ok(removed)
+}
+
 // --- Config Templates ---
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

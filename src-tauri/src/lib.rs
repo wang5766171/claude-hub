@@ -182,8 +182,23 @@ fn delete_custom_command(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_in_terminal(project_path: String, resume_session_id: Option<String>) -> Result<(), String> {
+fn open_in_terminal(project_path: String, resume_session_id: Option<String>) -> Result<u32, String> {
     command::open_in_terminal(&project_path, resume_session_id.as_deref()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn register_terminal_session(session_id: String, pid: u32, project_path: String) -> Result<(), String> {
+    hub::register_terminal_session(session_id, pid, project_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_terminal_session(session_id: String) -> Result<Option<hub::TerminalSessionInfo>, String> {
+    hub::get_terminal_session(&session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cleanup_dead_sessions() -> Result<u32, String> {
+    hub::cleanup_dead_sessions().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -318,6 +333,9 @@ pub fn run() {
             save_custom_command,
             delete_custom_command,
             open_in_terminal,
+            register_terminal_session,
+            get_terminal_session,
+            cleanup_dead_sessions,
             execute_command,
             load_project_settings,
             load_project_settings_local,
