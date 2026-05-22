@@ -6,6 +6,7 @@ mod hub;
 mod command;
 mod project_config;
 mod chat;
+mod image;
 
 use std::collections::HashMap;
 use tauri::Manager;
@@ -334,6 +335,7 @@ pub fn run() {
             list_config_templates,
             chat::send_message,
             chat::abort_chat,
+            image::save_session_images,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
