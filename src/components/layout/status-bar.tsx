@@ -3,11 +3,10 @@ import { Globe } from "lucide-react";
 import { invokeCommand } from "@/hooks/use-invoke";
 
 interface StatusBarProps {
-  modelName: string | null;
   projectCount: number;
 }
 
-export function StatusBar({ modelName, projectCount }: StatusBarProps) {
+export function StatusBar({ projectCount }: StatusBarProps) {
   const { t, i18n } = useTranslation();
 
   const toggleLanguage = async () => {
@@ -18,7 +17,6 @@ export function StatusBar({ modelName, projectCount }: StatusBarProps) {
 
   return (
     <footer className="flex items-center gap-4 border-t border-border bg-card px-4 py-1.5 text-xs text-muted-foreground">
-      <span>{t("status.model", { model: modelName ?? t("common.default") })}</span>
       <span>{t("status.projects", { count: projectCount })}</span>
       <button
         onClick={toggleLanguage}

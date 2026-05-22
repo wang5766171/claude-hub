@@ -7,14 +7,13 @@ import { ConfigPage } from "@/pages/config-page";
 import { CommandsPage } from "@/pages/commands-page";
 import { useInvoke } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
-import type { Page, Project, ClaudeConfig } from "@/types";
+import type { Page, Project } from "@/types";
 
 function App() {
   useTranslation();
   const [currentPage, setCurrentPage] = useState<Page>("projects");
   const [initialProject, setInitialProject] = useState<string | null>(null);
   const { data: projects } = useInvoke<Project[]>("scan_projects");
-  const { data: config } = useInvoke<ClaudeConfig>("load_config");
 
   const navigateToSession = (encodedName: string) => {
     setInitialProject(encodedName);
@@ -25,7 +24,6 @@ function App() {
     <AppLayout
       currentPage={currentPage}
       onNavigate={setCurrentPage}
-      modelName={config?.model ?? null}
       projectCount={projects?.length ?? 0}
     >
       {currentPage === "projects" && (
