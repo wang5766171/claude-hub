@@ -61,6 +61,18 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     }
   };
 
+  const handleNewSession = async () => {
+    const project = projects?.find((p) => p.encoded_name === selectedProject);
+    if (!project) return;
+    try {
+      await invokeCommand<number>("open_in_terminal", {
+        projectPath: project.path,
+      });
+    } catch (err) {
+      console.error("Failed to start new session:", err);
+    }
+  };
+
   const handleSelectProject = (encodedName: string) => {
     setSelectedProject(encodedName);
     setSelectedSession(null);
@@ -214,10 +226,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    onClick={() => {
-                      setSelectedSession(null);
-                      setSessionMessages([]);
-                    }}
+                    onClick={handleNewSession}
                     title={t("sessions.newSession")}
                   >
                     <Plus className="h-3.5 w-3.5" />
