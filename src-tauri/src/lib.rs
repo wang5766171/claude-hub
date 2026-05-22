@@ -5,6 +5,7 @@ mod history;
 mod hub;
 mod command;
 mod project_config;
+mod chat;
 
 use std::collections::HashMap;
 use tauri::Manager;
@@ -278,6 +279,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            app.manage(std::sync::Mutex::new(chat::ChatState::new()));
             if let Ok(pinned) = hub::load_always_on_top() {
                 if pinned {
                     if let Some(window) = app.get_webview_window("main") {
@@ -330,6 +332,8 @@ pub fn run() {
             get_project_merges,
             get_merged_secondaries,
             list_config_templates,
+            chat::send_message,
+            chat::abort_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
