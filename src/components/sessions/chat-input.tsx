@@ -129,7 +129,7 @@ export function ChatInput({
 
       const finalMessage = message.trim() || t("projects.defaultImageMessage");
 
-      const chatSession = await invokeCommand<{ sessionId: string; processId: number }>(
+      const chatSession = await invokeCommand<{ session_id: string; process_id: number }>(
         "send_message",
         {
           projectPath,
@@ -139,13 +139,13 @@ export function ChatInput({
         }
       );
 
-      setActiveSessionId(chatSession.sessionId);
-      if (onMessageSent) onMessageSent(chatSession.sessionId);
+      setActiveSessionId(chatSession.session_id);
+      if (onMessageSent) onMessageSent(chatSession.session_id);
 
       // Stream events are handled by the parent via listen("chat-stream")
       // We just listen for the result event to clear our own sending state
       const unlisten = await listen<StreamChunk>("chat-stream", (event) => {
-        if (event.payload.session_id === chatSession.sessionId) {
+        if (event.payload.session_id === chatSession.session_id) {
           if (onStreamChunk) onStreamChunk(event.payload);
           if (event.payload.event_type === "result") {
             setSending(false);

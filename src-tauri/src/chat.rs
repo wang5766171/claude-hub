@@ -63,18 +63,28 @@ pub async fn send_message(
         args.push(sid.clone());
     }
 
+    // On Windows, claude might be a .cmd script — must use cmd /C
+    #[cfg(target_os = "windows")]
+    let mut child = {
+        let mut full_args = vec!["/C".to_string(), "claude".to_string()];
+        full_args.extend(args);
+        Command::new("cmd")
+            .args(&full_args)
+            .current_dir(&project_path)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to spawn claude: {}", e))?
+    };
+
+    #[cfg(not(target_os = "windows"))]
     let mut child = Command::new("claude")
         .args(&args)
         .current_dir(&project_path)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
-        .map_err(|e| {
-            format!(
-                "Failed to spawn claude: {}. Is Claude Code CLI installed?",
-                e
-            )
-        })?;
+        .map_err(|e| format!("Failed to spawn claude: {}", e))?;
 
     let pid = child.id().unwrap_or(0);
     let sid = session_id.unwrap_or_else(|| format!("pending-{}", pid));
