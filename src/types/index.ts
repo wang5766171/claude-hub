@@ -49,11 +49,72 @@ export interface HistoryEntry {
   sessionId: string | null;
 }
 
+export interface PermissionsConfig {
+  allow: string[] | null;
+  deny: string[] | null;
+  defaultMode: string | null;
+  additionalDirectories: string[] | null;
+}
+
+export interface McpServerConfig {
+  command: string | null;
+  args: string[] | null;
+  env: Record<string, unknown> | null;
+  cwd: string | null;
+  type: string | null;
+  url: string | null;
+}
+
+export interface HookAction {
+  type: string;
+  command: string | null;
+  timeout: number | null;
+}
+
+export interface HookMatcher {
+  matcher: string | null;
+  hooks: HookAction[];
+}
+
+export interface SandboxConfig {
+  enabled: boolean | null;
+  allowCommand: string[] | null;
+  denyCommand: string[] | null;
+  allowPath: string[] | null;
+  denyPath: string[] | null;
+  network: string | null;
+  profile: string | null;
+}
+
+export interface ContextCompactionConfig {
+  threshold: number | null;
+  method: string | null;
+}
+
 export interface ClaudeConfig {
   model: string | null;
   env: Record<string, string> | null;
   enabledPlugins: Record<string, boolean> | null;
   skipDangerousModePermissionPrompt: boolean | null;
+  permissions: PermissionsConfig | null;
+  mcpServers: Record<string, McpServerConfig> | null;
+  apiProvider: string | null;
+  smallModel: string | null;
+  largeModel: string | null;
+  allowedTools: string[] | null;
+  disallowedTools: string[] | null;
+  hooks: Record<string, HookMatcher[]> | null;
+  sandbox: SandboxConfig | null;
+  verbose: boolean | null;
+  maxTurns: number | null;
+  contextCompaction: ContextCompactionConfig | null;
+}
+
+export interface ConfigTemplate {
+  id: string;
+  name: string;
+  description: string;
+  config: ClaudeConfig;
 }
 
 export interface Preset {
