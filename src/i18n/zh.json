@@ -38,7 +38,16 @@
     "projectPathPlaceholder": "D:\\MyCodes\\my-project",
     "refresh": "刷新项目",
     "search": "搜索项目名称或标签...",
-    "noSearchResults": "没有匹配的项目"
+    "noSearchResults": "没有匹配的项目",
+    "mergedCount": "+{{count}} 已合并",
+    "mergeTitle": "合并项目",
+    "mergeSelectPrimary": "选择主项目（其他项目将合并到主项目中）：",
+    "mergeLogicalHint": "逻辑合并：仅在 Hub 中合并显示，不修改实际文件，可随时拆分",
+    "mergeConfirm": "确认合并",
+    "merging": "合并中...",
+    "splitProject": "拆分项目（{{count}} 个子项目）",
+    "imageLabel": "图片{{index}}",
+    "defaultImageMessage": "请查看这张图片"
   },
   "sessions": {
     "projects": "项目",
@@ -74,7 +83,9 @@
     "stop": "停止",
     "attachImage": "添加图片",
     "newSession": "新建会话",
-    "resuming": "正在打开终端..."
+    "resuming": "正在打开终端...",
+    "toolCalls": "工具调用 ({{count}})",
+    "thinkingDots": "思考中..."
   },
   "config": {
     "title": "配置管理",
@@ -130,7 +141,10 @@
     "addPattern": "添加",
     "patternPlaceholder": "例如：Bash(git *)",
     "verbose": "详细日志",
-    "maxTurns": "最大对话轮次"
+    "maxTurns": "最大对话轮次",
+    "sandbox": "沙箱",
+    "enabled": "已启用",
+    "disabled": "已禁用"
   },
   "commands": {
     "title": "快捷命令",
@@ -172,6 +186,19 @@
     "noHooks": "未配置钩子",
     "envVars": "环境变量",
     "info": "信息",
-    "config": "配置"
+    "config": "配置",
+    "metaInfo": "项目信息",
+    "editMetaInfo": "编辑项目信息",
+    "customName": "自定义名称",
+    "customNameColon": "自定义名称：",
+    "customNamePlaceholder": "输入自定义名称",
+    "tags": "标签",
+    "tagsColon": "标签：",
+    "tagInputPlaceholder": "输入标签",
+    "notes": "备注",
+    "notesColon": "备注：",
+    "notesPlaceholder": "输入备注",
+    "addMetaHint": "点击编辑按钮添加自定义名称、标签或备注",
+    "matcher": "匹配器"
   }
 }

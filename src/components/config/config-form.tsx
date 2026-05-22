@@ -364,9 +364,9 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
               {/* Sandbox */}
               <div className="flex items-center justify-between rounded-md border px-3 py-3">
                 <div className="space-y-0.5">
-                  <Label>Sandbox</Label>
+                  <Label>{t("config.sandbox")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    {config.sandbox?.enabled ? "Enabled" : "Disabled"}
+                    {config.sandbox?.enabled ? t("config.enabled") : t("config.disabled")}
                   </p>
                 </div>
                 <Switch

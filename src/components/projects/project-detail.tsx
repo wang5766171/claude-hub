@@ -156,7 +156,7 @@ export function ProjectDetail({ project, onClose, onViewSessions, onRemoved, pro
                     }
                   }}
                 >
-                  拆分项目（{merges[project.encoded_name].length} 个子项目）
+                  {t("projects.splitProject", { count: merges[project.encoded_name].length })}
                 </Button>
               )}
             </div>

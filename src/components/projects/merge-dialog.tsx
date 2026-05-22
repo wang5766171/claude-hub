@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { invokeCommand } from "@/hooks/use-invoke";
@@ -12,6 +13,7 @@ interface MergeDialogProps {
 }
 
 export function MergeDialog({ open, onOpenChange, selectedProjects, projectNames, onMergeComplete }: MergeDialogProps) {
+  const { t } = useTranslation();
   const [primary, setPrimary] = useState(selectedProjects[0]);
   const [loading, setLoading] = useState(false);
 
@@ -41,11 +43,11 @@ export function MergeDialog({ open, onOpenChange, selectedProjects, projectNames
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>合并项目</DialogTitle>
+          <DialogTitle>{t("projects.mergeTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>
-            <p className="text-sm text-muted-foreground mb-3">选择主项目（其他项目将合并到主项目中）：</p>
+            <p className="text-sm text-muted-foreground mb-3">{t("projects.mergeSelectPrimary")}</p>
             <div className="space-y-2">
               {selectedProjects.map((encoded) => (
                 <label
@@ -69,13 +71,13 @@ export function MergeDialog({ open, onOpenChange, selectedProjects, projectNames
             </div>
           </div>
           <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-            逻辑合并：仅在 Hub 中合并显示，不修改实际文件，可随时拆分
+            {t("projects.mergeLogicalHint")}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleMerge} disabled={loading}>
-            {loading ? "合并中..." : "确认合并"}
+            {loading ? t("projects.merging") : t("projects.mergeConfirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

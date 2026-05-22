@@ -64,7 +64,7 @@ export function ChatInput({
                 id: `paste-${Date.now()}-${i}`,
                 data: base64,
                 filename: file.name || `pasted-image-${idx}.png`,
-                label: `图片${idx}`,
+                label: t("projects.imageLabel", { index: idx }),
               },
             ]);
           };
@@ -127,7 +127,7 @@ export function ChatInput({
         savedImagePaths = saved.map((s) => s.path);
       }
 
-      const finalMessage = message.trim() || "请查看这张图片";
+      const finalMessage = message.trim() || t("projects.defaultImageMessage");
 
       const chatSession = await invokeCommand<{ sessionId: string; processId: number }>(
         "send_message",

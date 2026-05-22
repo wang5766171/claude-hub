@@ -38,7 +38,16 @@
     "projectPathPlaceholder": "D:\\MyCodes\\my-project",
     "refresh": "Refresh Projects",
     "search": "Search by name or tag...",
-    "noSearchResults": "No matching projects"
+    "noSearchResults": "No matching projects",
+    "mergedCount": "+{{count}} merged",
+    "mergeTitle": "Merge Projects",
+    "mergeSelectPrimary": "Select a primary project (others will be merged into it):",
+    "mergeLogicalHint": "Logical merge: only combined in Hub display, actual files are not modified, can be split anytime",
+    "mergeConfirm": "Confirm Merge",
+    "merging": "Merging...",
+    "splitProject": "Split Project ({{count}} sub-projects)",
+    "imageLabel": "Image {{index}}",
+    "defaultImageMessage": "Please review this image"
   },
   "sessions": {
     "projects": "Projects",
@@ -74,7 +83,9 @@
     "stop": "Stop",
     "attachImage": "Attach image",
     "newSession": "New session",
-    "resuming": "Opening terminal..."
+    "resuming": "Opening terminal...",
+    "toolCalls": "Tool Calls ({{count}})",
+    "thinkingDots": "Thinking..."
   },
   "config": {
     "title": "Configuration",
@@ -130,7 +141,10 @@
     "addPattern": "Add",
     "patternPlaceholder": "e.g., Bash(git *)",
     "verbose": "Verbose Logging",
-    "maxTurns": "Max Turns"
+    "maxTurns": "Max Turns",
+    "sandbox": "Sandbox",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "commands": {
     "title": "Commands",
@@ -172,6 +186,19 @@
     "noHooks": "No hooks configured",
     "envVars": "Environment Variables",
     "info": "Info",
-    "config": "Config"
+    "config": "Config",
+    "metaInfo": "Project Info",
+    "editMetaInfo": "Edit Project Info",
+    "customName": "Custom Name",
+    "customNameColon": "Custom Name:",
+    "customNamePlaceholder": "Enter custom name",
+    "tags": "Tags",
+    "tagsColon": "Tags:",
+    "tagInputPlaceholder": "Enter tag",
+    "notes": "Notes",
+    "notesColon": "Notes:",
+    "notesPlaceholder": "Enter notes",
+    "addMetaHint": "Click edit to add a custom name, tags, or notes",
+    "matcher": "Matcher"
   }
 }

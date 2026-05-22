@@ -63,7 +63,7 @@ export function ProjectCard({
       {mergedCount != null && mergedCount > 0 && (
         <div className="absolute top-2 right-2 z-10">
           <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded">
-            +{mergedCount} merged
+            {t("projects.mergedCount", { count: mergedCount })}
           </span>
         </div>
       )}

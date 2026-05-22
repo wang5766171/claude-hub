@@ -73,7 +73,7 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-destructive">Error: {error}</div>;
+    return <div className="p-4 text-sm text-destructive">{String(error)}</div>;
   }
 
   return (
@@ -242,7 +242,7 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
                 <p className="text-xs font-medium text-muted-foreground">{event}</p>
                 {entries.map((entry, i) => (
                   <div key={i} className="mt-1 space-y-1">
-                    {entry.matcher && <p className="text-xs text-muted-foreground">matcher: {entry.matcher}</p>}
+                    {entry.matcher && <p className="text-xs text-muted-foreground">{t("projectConfig.matcher")}: {entry.matcher}</p>}
                     {entry.hooks.map((hook, j) => (
                       <div key={j} className="flex items-start gap-2">
                         <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{hook.type}</code>

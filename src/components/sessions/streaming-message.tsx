@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { StreamChunk } from "@/types";
 
 interface StreamingMessageProps {
@@ -7,6 +8,7 @@ interface StreamingMessageProps {
 }
 
 export function StreamingMessage({ chunks, isComplete }: StreamingMessageProps) {
+  const { t } = useTranslation();
   const [displayText, setDisplayText] = useState("");
   const [toolUses, setToolUses] = useState<Array<{ name: string; input: unknown }>>([]);
 
@@ -48,7 +50,7 @@ export function StreamingMessage({ chunks, isComplete }: StreamingMessageProps) 
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           {!isComplete && <span className="inline-block w-1.5 h-4 bg-primary animate-pulse" />}
-          <span>{isComplete ? "" : "思考中..."}</span>
+          <span>{isComplete ? "" : t("sessions.thinkingDots")}</span>
         </div>
       </div>
     );
@@ -63,7 +65,7 @@ export function StreamingMessage({ chunks, isComplete }: StreamingMessageProps) 
       {toolUses.length > 0 && (
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer">
-            工具调用 ({toolUses.length})
+            {t("sessions.toolCalls", { count: toolUses.length })}
           </summary>
           {toolUses.map((tool, i) => (
             <div key={i} className="mt-1 rounded border p-2 font-mono">

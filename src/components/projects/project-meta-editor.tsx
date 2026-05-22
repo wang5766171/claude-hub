@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ interface ProjectMetaEditorProps {
 }
 
 export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: ProjectMetaEditorProps) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(meta?.custom_name || "");
   const [notes, setNotes] = useState(meta?.notes || "");
@@ -62,20 +64,20 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">项目信息</span>
+          <span className="text-sm font-medium">{t("projectConfig.metaInfo")}</span>
           <Button variant="ghost" size="icon-xs" onClick={() => setEditing(true)}>
             <Pencil className="h-3 w-3" />
           </Button>
         </div>
         {meta?.custom_name && (
           <div className="text-sm">
-            <span className="text-muted-foreground">自定义名称：</span>
+            <span className="text-muted-foreground">{t("projectConfig.customNameColon")}</span>
             {meta.custom_name}
           </div>
         )}
         {meta?.tags && meta.tags.length > 0 && (
           <div className="text-sm">
-            <span className="text-muted-foreground">标签：</span>
+            <span className="text-muted-foreground">{t("projectConfig.tagsColon")}</span>
             <div className="flex gap-1 mt-1 flex-wrap">
               {meta.tags.map(tag => (
                 <span key={tag} className="inline-flex items-center px-1.5 py-0.5 text-xs bg-secondary text-secondary-foreground rounded">
@@ -87,12 +89,12 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
         )}
         {meta?.notes && (
           <div className="text-sm">
-            <span className="text-muted-foreground">备注：</span>
+            <span className="text-muted-foreground">{t("projectConfig.notesColon")}</span>
             {meta.notes}
           </div>
         )}
         {!meta?.custom_name && !meta?.tags?.length && !meta?.notes && (
-          <p className="text-xs text-muted-foreground">点击编辑按钮添加自定义名称、标签或备注</p>
+          <p className="text-xs text-muted-foreground">{t("projectConfig.addMetaHint")}</p>
         )}
       </div>
     );
@@ -101,7 +103,7 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">编辑项目信息</span>
+        <span className="text-sm font-medium">{t("projectConfig.editMetaInfo")}</span>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon-xs" onClick={handleCancel}>
             <X className="h-3 w-3" />
@@ -112,11 +114,11 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
         </div>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">自定义名称</Label>
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="输入自定义名称" className="h-8 text-sm" />
+        <Label className="text-xs">{t("projectConfig.customName")}</Label>
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder={t("projectConfig.customNamePlaceholder")} className="h-8 text-sm" />
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">标签</Label>
+        <Label className="text-xs">{t("projectConfig.tags")}</Label>
         <div className="flex gap-1 flex-wrap mb-1">
           {tags.map(tag => (
             <span key={tag} className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-secondary text-secondary-foreground rounded">
@@ -126,7 +128,7 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
           ))}
         </div>
         <div className="flex gap-1">
-          <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="输入标签" className="h-7 text-xs" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); }}} />
+          <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder={t("projectConfig.tagInputPlaceholder")} className="h-7 text-xs" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); }}} />
           <Button variant="outline" size="icon-xs" onClick={addTag}>
             <Plus className="h-3 w-3" />
           </Button>
@@ -147,8 +149,8 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
         )}
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">备注</Label>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="输入备注" className="w-full min-h-[60px] text-sm border rounded-md px-2 py-1 resize-none" />
+        <Label className="text-xs">{t("projectConfig.notes")}</Label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t("projectConfig.notesPlaceholder")} className="w-full min-h-[60px] text-sm border rounded-md px-2 py-1 resize-none" />
       </div>
     </div>
   );
