@@ -10,7 +10,6 @@ import type { CustomCommand, CommandOutput } from "@/types";
 
 const BUILT_IN_COMMANDS = [
   { name: "claude --version", command: "claude --version" },
-  { name: "claude config list", command: "claude config list" },
   { name: "claude mcp list", command: "claude mcp list" },
 ];
 
