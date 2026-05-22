@@ -1,6 +1,6 @@
 [package]
 name = "claude-hub"
-version = "0.2.1"
+version = "0.3.0"
 description = "A desktop GUI for managing Claude Code projects, sessions, and configuration"
 authors = ["wang5766171"]
 license = "MIT"
