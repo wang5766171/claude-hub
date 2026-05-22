@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { SessionList } from "@/components/sessions/session-list";
 import { MessageView } from "@/components/sessions/message-view";
@@ -39,6 +39,8 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [streamChunks, setStreamChunks] = useState<StreamChunk[]>([]);
   const [streamingSession, setStreamingSession] = useState<string | null>(null);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  const messageAreaRef = useRef<HTMLDivElement>(null);
 
   // Register stream listener at mount so we don't miss early events
   useEffect(() => {
@@ -49,7 +51,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
         setStreamChunks(prev => [...prev, chunk]);
         if (chunk.event_type === "result") {
           setStreamingSession(null);
-          // Use setTimeout to allow state to settle before refresh
+          setPendingUserMessage(null);
           setTimeout(() => {
             if (selectedSession && selectedProject) {
               invokeCommand<Message[]>("get_session_messages", {
@@ -309,20 +311,25 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                 <Pencil className="h-3 w-3" />
               </Button>
             </div>
-            <div className="flex-1 min-h-0">
+            <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto">
               <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} onRefresh={handleRefreshMessages} />
+              {streamingSession && (
+                <StreamingMessage
+                  chunks={streamChunks}
+                  isComplete={!streamingSession}
+                  userMessage={pendingUserMessage ?? undefined}
+                  scrollContainerRef={messageAreaRef}
+                />
+              )}
             </div>
           </>
         )}
         {selectedProject && (
           <>
-            {streamingSession && streamChunks.length > 0 && (
-              <StreamingMessage chunks={streamChunks} isComplete={!streamingSession} />
-            )}
             <ChatInput
               sessionId={selectedSession}
               projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
-              onMessageSent={(sid) => setStreamingSession(sid)}
+              onMessageSent={(sid, msg) => { setStreamingSession(sid); setPendingUserMessage(msg); }}
             />
           </>
         )}

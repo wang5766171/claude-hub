@@ -18,9 +18,7 @@ interface ChatInputProps {
   sessionId: string | null;
   projectPath: string | null;
   disabled?: boolean;
-  onMessageSent?: (chatSessionId: string) => void;
-  onStreamChunk?: (chunk: StreamChunk) => void;
-  onStreamComplete?: () => void;
+  onMessageSent?: (chatSessionId: string, userMessage: string) => void;
 }
 
 export function ChatInput({
@@ -138,7 +136,7 @@ export function ChatInput({
       );
 
       setActiveSessionId(chatSession.session_id);
-      if (onMessageSent) onMessageSent(chatSession.session_id);
+      if (onMessageSent) onMessageSent(chatSession.session_id, finalMessage);
 
       // Listen for result to clear our own sending state
       // Stream display is handled by sessions-page's global listener
