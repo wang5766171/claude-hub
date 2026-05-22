@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
+import { getVersion } from "@tauri-apps/api/app";
 import type { Page } from "@/types";
 
 interface SidebarProps {
@@ -20,9 +21,11 @@ const navItems: { page: Page; icon: typeof FolderOpen; labelKey: string }[] = [
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState(false);
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     invokeCommand<boolean>("load_always_on_top").then(setPinned).catch(console.error);
+    getVersion().then((v) => setVersion(v)).catch(() => setVersion("unknown"));
   }, []);
 
   const handleToggle = async () => {
@@ -50,7 +53,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">v0.2.0</p>
+        <p className="text-xs text-muted-foreground">{version ? `v${version}` : ""}</p>
       </div>
       <nav className="flex-1 p-2">
         {navItems.map(({ page, icon: Icon, labelKey }) => (
