@@ -172,3 +172,26 @@ export interface ProjectSettings {
 export interface ProjectMergeInfo {
   [primary: string]: string[];
 }
+
+export interface ChatSession {
+  sessionId: string;
+  processId: number;
+}
+
+export interface StreamChunk {
+  session_id: string;
+  event_type: string;
+  data: Record<string, unknown>;
+}
+
+export interface InputImage {
+  data: string;
+  filename: string;
+  label: string | null;
+}
+
+export interface SavedImage {
+  path: string;
+  label: string;
+  index: number;
+}
