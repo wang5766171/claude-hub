@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,18 @@ interface AddCommandDialogProps {
 
 export function AddCommandDialog({ open, onOpenChange, editCommand, onSaved }: AddCommandDialogProps) {
   const { t } = useTranslation();
-  const [name, setName] = useState(editCommand?.name ?? "");
-  const [command, setCommand] = useState(editCommand?.command ?? "");
-  const [projectPath, setProjectPath] = useState(editCommand?.projectPath ?? "");
+  const [name, setName] = useState("");
+  const [command, setCommand] = useState("");
+  const [projectPath, setProjectPath] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(editCommand?.name ?? "");
+      setCommand(editCommand?.command ?? "");
+      setProjectPath(editCommand?.projectPath ?? "");
+    }
+  }, [open, editCommand]);
 
   const handleSave = async () => {
     if (!name.trim() || !command.trim()) return;
