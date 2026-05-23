@@ -20,7 +20,7 @@ export function CommandsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editCmd, setEditCmd] = useState<CustomCommand | null>(null);
   const [runningKey, setRunningKey] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleRun = useCallback(async (key: string, cmd: string, cwd?: string | null) => {
     if (runningKey) return;
