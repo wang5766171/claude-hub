@@ -276,4 +276,29 @@ mod tests {
         assert_eq!(smart_summary("First sentence. Second one"), "First sentence");
         assert_eq!(smart_summary("第一句。第二句"), "第一句");
     }
+
+    #[test]
+    fn test_parse_tool_use_message() {
+        let line = r#"{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"call_123","name":"Read","input":{"file_path":"test.png"}}]}}"#;
+        let msg = parse_message(line).unwrap();
+        assert_eq!(msg.role, "assistant");
+        assert_eq!(msg.content.len(), 1);
+        match &msg.content[0] {
+            ContentBlock::ToolUse { name, .. } => assert_eq!(name, "Read"),
+            other => panic!("Expected ToolUse, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_parse_tool_result_message() {
+        let line = r#"{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_123","content":"file contents here"}]}}"#;
+        let msg = parse_message(line).unwrap();
+        assert_eq!(msg.role, "user");
+        match &msg.content[0] {
+            ContentBlock::ToolResult { content, .. } => {
+                assert_eq!(content.as_str().unwrap(), "file contents here");
+            }
+            other => panic!("Expected ToolResult, got {:?}", other),
+        }
+    }
 }

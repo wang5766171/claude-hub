@@ -36,22 +36,18 @@ pub async fn send_message(
     project_path: String,
     session_id: Option<String>,
     message: String,
-    image_paths: Option<Vec<String>>,
 ) -> Result<ChatSession, String> {
-    let mut prompt = message.clone();
-    if let Some(ref paths) = image_paths {
-        if !paths.is_empty() {
-            prompt.push('\n');
-        }
-        for (i, path) in paths.iter().enumerate() {
-            let label = format!("\u{56fe}\u{7247}{}", i + 1);
-            prompt.push_str(&format!("{}: {}\n", label, path));
-        }
-    }
+    log::info!(
+        "send_message: project={}, session={:?}, message_len={}",
+        project_path, session_id, message.len()
+    );
+
+    // cmd /C treats newlines as command separators — must escape them
+    let escaped_message = message.replace('\r', "").replace('\n', "\\n");
 
     let mut args: Vec<String> = vec![
         "-p".into(),
-        prompt,
+        escaped_message,
         "--output-format".into(),
         "stream-json".into(),
         "--verbose".into(),
@@ -97,10 +93,23 @@ pub async fn send_message(
     let app_clone = app.clone();
     let sid_clone = sid.clone();
     let stdout = child.stdout.take().ok_or("No stdout from claude process")?;
+    let stderr = child.stderr.take();
     let reader = BufReader::new(stdout);
+
+    // Drain stderr to prevent pipe buffer deadlock
+    if let Some(stderr) = stderr {
+        tauri::async_runtime::spawn(async move {
+            let reader = BufReader::new(stderr);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                log::warn!("[claude stderr] {}", line);
+            }
+        });
+    }
 
     tauri::async_runtime::spawn(async move {
         let mut lines = reader.lines();
+        let mut saw_result = false;
         while let Ok(Some(line)) = lines.next_line().await {
             if line.trim().is_empty() {
                 continue;
@@ -122,6 +131,10 @@ pub async fn send_message(
                 }
                 .to_string();
 
+                if event_type == "result" {
+                    saw_result = true;
+                }
+
                 let _ = app_clone.emit(
                     "chat-stream",
                     StreamChunk {
@@ -131,6 +144,21 @@ pub async fn send_message(
                     },
                 );
             }
+        }
+
+        // If process exited without sending a result event, emit a synthetic error
+        if !saw_result {
+            let _ = app_clone.emit(
+                "chat-stream",
+                StreamChunk {
+                    session_id: sid_clone.clone(),
+                    event_type: "result".into(),
+                    data: serde_json::json!({
+                        "type": "result",
+                        "error": "Process exited without result (image path format may not be supported)"
+                    }),
+                },
+            );
         }
 
         let state = app_clone.state::<Mutex<ChatState>>();

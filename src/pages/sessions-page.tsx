@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { SessionList } from "@/components/sessions/session-list";
 import { MessageView } from "@/components/sessions/message-view";
@@ -12,7 +12,7 @@ import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight, Plus } from "
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { searchSessions } from "@/lib/session-search";
-import type { Session, Project, Message, SessionSearchResult, StreamChunk } from "@/types";
+import type { Session, Project, Message, ContentBlock, SessionSearchResult, StreamChunk } from "@/types";
 
 interface SessionsPageProps {
   initialProject?: string | null;
@@ -38,35 +38,30 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const [sessionCollapsed, setSessionCollapsed] = useState(false);
   const [streamChunks, setStreamChunks] = useState<StreamChunk[]>([]);
   const [streamingSession, setStreamingSession] = useState<string | null>(null);
+  const [streamComplete, setStreamComplete] = useState(false);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  const [msgSearchSeed, setMsgSearchSeed] = useState("");
   const messageAreaRef = useRef<HTMLDivElement>(null);
+  const streamChunksRef = useRef<StreamChunk[]>([]);
+  const visitedSessions = useRef(new Set<string>());
+  const scrollMemory = useRef(new Map<string, number>());
+  const scrollAction = useRef<{ type: "bottom" } | { type: "restore"; top: number } | null>(null);
+  const streamingActive = streamingSession || streamComplete;
 
-  // Register stream listener at mount so we don't miss early events
-  useEffect(() => {
-    let unlisten: (() => void) | null = null;
-    listen<StreamChunk>("chat-stream", (event) => {
-      const chunk = event.payload;
-      if (chunk.session_id === streamingSession) {
-        setStreamChunks(prev => [...prev, chunk]);
-        if (chunk.event_type === "result") {
-          setStreamingSession(null);
-          setPendingUserMessage(null);
-          setTimeout(() => {
-            if (selectedSession && selectedProject) {
-              invokeCommand<Message[]>("get_session_messages", {
-                sessionId: selectedSession,
-                encodedName: selectedProject,
-              }).then(setSessionMessages).catch(console.error);
-            }
-          }, 500);
-        }
-      }
-    }).then(fn => { unlisten = fn; });
-    return () => { if (unlisten) unlisten(); };
-  }, [streamingSession, selectedSession, selectedProject]);
+  // useLayoutEffect 在浏览器绘制前执行，不会抖动
+  useLayoutEffect(() => {
+    if (!scrollAction.current || !messageAreaRef.current) return;
+    const action = scrollAction.current;
+    scrollAction.current = null;
+    if (action.type === "bottom") {
+      messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+    } else {
+      messageAreaRef.current.scrollTop = action.top;
+    }
+  }, [sessionMessages]);
 
-  const { data: sessions } = useInvoke<Session[]>(
+  const { data: sessions, refetch: refetchSessions } = useInvoke<Session[]>(
     selectedProject ? "list_sessions" : "",
     selectedProject ? { encodedName: selectedProject } : undefined
   );
@@ -77,13 +72,27 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   }, [sessions, activeSearchQuery]);
 
   const handleSelectSession = async (sessionId: string) => {
+    if (selectedSession && messageAreaRef.current) {
+      scrollMemory.current.set(selectedSession, messageAreaRef.current.scrollTop);
+    }
+    const isFirstVisit = !visitedSessions.current.has(sessionId);
     setSelectedSession(sessionId);
+    setMsgSearchSeed(activeSearchQuery);
     if (selectedProject) {
       const messages = await invokeCommand<Message[]>("get_session_messages", {
         sessionId,
         encodedName: selectedProject,
       });
       setSessionMessages(messages);
+      if (isFirstVisit) {
+        scrollAction.current = { type: "bottom" };
+        visitedSessions.current.add(sessionId);
+      } else {
+        const saved = scrollMemory.current.get(sessionId);
+        scrollAction.current = saved !== undefined
+          ? { type: "restore", top: saved }
+          : { type: "bottom" };
+      }
     }
   };
 
@@ -157,10 +166,59 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
     listen<StreamChunk>("chat-stream", (event) => {
       const chunk = event.payload;
       if (chunk.session_id === streamingSession || chunk.session_id.startsWith("pending-")) {
+        streamChunksRef.current = [...streamChunksRef.current, chunk];
         setStreamChunks((prev) => [...prev, chunk]);
         if (chunk.event_type === "result") {
+          // Extract accumulated content from stream chunks
+          let text = "";
+          const tools: Array<{ type: "tool_use"; id: string; name: string; input: unknown }> = [];
+          for (const c of streamChunksRef.current) {
+            if (c.event_type === "delta") {
+              const delta = (c.data as Record<string, unknown>)?.event as Record<string, unknown> | undefined;
+              const deltaObj = delta?.delta as Record<string, unknown> | undefined;
+              if (deltaObj?.type === "text_delta" && typeof deltaObj.text === "string") {
+                text += deltaObj.text;
+              }
+            } else if (c.event_type === "message") {
+              const content = (c.data as Record<string, unknown>)?.content as Array<Record<string, unknown>> | undefined;
+              if (content) {
+                for (const block of content) {
+                  if (block.type === "text" && typeof block.text === "string") text += block.text;
+                  else if (block.type === "tool_use") tools.push({ type: "tool_use", id: block.id as string ?? "", name: block.name as string, input: block.input });
+                }
+              }
+            }
+          }
+
+          // Build messages from stream data — tools first, then text answer
+          const newMessages: Message[] = [];
+          if (pendingUserMessage) {
+            newMessages.push({ role: "user", content: [{ type: "text", text: pendingUserMessage }], timestamp: Date.now() });
+          }
+          const assistantContent: ContentBlock[] = [];
+          assistantContent.push(...tools);
+          if (text) assistantContent.push({ type: "text", text });
+          if (assistantContent.length > 0) {
+            newMessages.push({ role: "assistant", content: assistantContent, timestamp: Date.now() });
+          }
+
+          // Append directly to sessionMessages — seamless transition
+          setSessionMessages((prev) => [...prev, ...newMessages]);
           setStreamingSession(null);
-          handleRefreshMessages();
+          setStreamComplete(false);
+          setStreamChunks([]);
+          streamChunksRef.current = [];
+          setPendingUserMessage(null);
+
+          // Scroll to bottom after transition
+          requestAnimationFrame(() => {
+            if (messageAreaRef.current) {
+              messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+            }
+          });
+
+          // Update session list only — don't refresh messages to avoid visual jump
+          setTimeout(() => { refetchSessions(); refetchNames(); }, 2000);
         }
       }
     }).then((fn) => {
@@ -296,27 +354,33 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
 
       {/* Column 3: Message view + Chat input */}
       <div className="flex-1 flex flex-col min-w-[300px]">
-        {!selectedSession || !currentSession ? (
+        {!selectedSession && !streamingActive ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <p>{t("sessions.selectSession")}</p>
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between border-b border-border px-4 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-medium text-sm truncate">{displayName}</span>
-                <span className="text-xs text-muted-foreground">{selectedSession.slice(0, 8)}</span>
+            {selectedSession && currentSession ? (
+              <div className="flex items-center justify-between border-b border-border px-4 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium text-sm truncate">{displayName}</span>
+                  <span className="text-xs text-muted-foreground">{selectedSession.slice(0, 8)}</span>
+                </div>
+                <Button variant="ghost" size="icon-xs" onClick={() => setRenameOpen(true)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
               </div>
-              <Button variant="ghost" size="icon-xs" onClick={() => setRenameOpen(true)}>
-                <Pencil className="h-3 w-3" />
-              </Button>
-            </div>
+            ) : (
+              <div className="border-b border-border px-4 py-2">
+                <span className="font-medium text-sm text-muted-foreground">{t("sessions.newChat")}</span>
+              </div>
+            )}
             <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto">
-              <MessageView messages={sessionMessages} initialSearchQuery={activeSearchQuery} onRefresh={handleRefreshMessages} />
-              {streamingSession && (
+              {selectedSession && <MessageView messages={sessionMessages} initialSearchQuery={msgSearchSeed} onRefresh={handleRefreshMessages} flat />}
+              {streamingActive && (
                 <StreamingMessage
                   chunks={streamChunks}
-                  isComplete={!streamingSession}
+                  isComplete={streamComplete}
                   userMessage={pendingUserMessage ?? undefined}
                   scrollContainerRef={messageAreaRef}
                 />
@@ -329,7 +393,17 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
             <ChatInput
               sessionId={selectedSession}
               projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
-              onMessageSent={(sid, msg) => { setStreamingSession(sid); setPendingUserMessage(msg); }}
+              onMessageSent={(sid, msg) => {
+                streamChunksRef.current = [];
+                setStreamChunks([]);
+                setStreamComplete(false);
+                setStreamingSession(sid);
+                setPendingUserMessage(msg);
+                // Auto-select new session so subsequent messages continue in same session
+                if (!selectedSession) {
+                  setSelectedSession(sid);
+                }
+              }}
             />
           </>
         )}

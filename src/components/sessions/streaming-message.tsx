@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { User, Bot, Wrench, ChevronRight, Copy, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { StreamChunk } from "@/types";
+import { InlineImages, stripImagePrompt } from "./inline-image";
 
 interface StreamingMessageProps {
   chunks: StreamChunk[];
@@ -17,13 +23,32 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
   const toolsRef = useRef<Array<{ name: string; input: unknown }>>([]);
   const rafRef = useRef<number>(0);
   const processedCount = useRef(0);
+  const userScrolledRef = useRef(false);
+
+  const isNearBottom = useCallback(() => {
+    if (!scrollContainerRef?.current) return true;
+    const el = scrollContainerRef.current;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, [scrollContainerRef]);
 
   const scrollToBottom = useCallback(() => {
+    if (userScrolledRef.current) return;
     if (scrollContainerRef?.current) {
       const el = scrollContainerRef.current;
       el.scrollTop = el.scrollHeight;
     }
   }, [scrollContainerRef]);
+
+  // Detect user manual scroll
+  useEffect(() => {
+    const el = scrollContainerRef?.current;
+    if (!el) return;
+    const onScroll = () => {
+      userScrolledRef.current = !isNearBottom();
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollContainerRef, isNearBottom]);
 
   // Batch text updates via ref + rAF for smooth streaming
   useEffect(() => {
@@ -52,7 +77,6 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
     }
     processedCount.current = chunks.length;
 
-    // Cancel previous rAF and schedule new one
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       setDisplayText(textRef.current);
@@ -68,53 +92,116 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
     textRef.current = "";
     toolsRef.current = [];
     processedCount.current = 0;
+    userScrolledRef.current = false;
     setDisplayText("");
     setToolUses([]);
   }, []);
 
-  // Auto-scroll periodically during streaming
-  useEffect(() => {
-    if (isComplete) return;
-    const interval = setInterval(scrollToBottom, 200);
-    return () => clearInterval(interval);
-  }, [isComplete, scrollToBottom]);
+  const hasContent = displayText.length > 0 || toolUses.length > 0;
 
   return (
-    <div className="px-4 py-3">
-      {/* User message */}
+    <div className="px-4 py-3 space-y-4">
+      {/* User message bubble */}
       {userMessage && (
-        <div className="flex justify-end mb-3">
-          <div className="rounded-lg bg-primary text-primary-foreground px-3 py-2 text-sm max-w-[80%] whitespace-pre-wrap">
-            {userMessage}
+        <div className="flex gap-2.5 w-full justify-end">
+          <div className="max-w-[85%] min-w-0 flex flex-col items-end">
+            <div className="flex items-center gap-2 mb-1 text-xs">
+              <span className="font-medium text-muted-foreground">{t("sessions.user")}</span>
+            </div>
+            <div className="rounded-xl px-3.5 py-2.5 bg-blue-500 text-white whitespace-pre-wrap break-all text-sm overflow-hidden min-w-0 max-w-full">
+              <InlineImages text={userMessage} />
+              {stripImagePrompt(userMessage)}
+            </div>
+          </div>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
+            <User className="h-3.5 w-3.5" />
           </div>
         </div>
       )}
 
       {/* Assistant streaming response */}
-      {!displayText && toolUses.length === 0 && !isComplete ? (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <span className="inline-block w-1.5 h-4 bg-primary animate-pulse" />
-          <span>{t("sessions.thinkingDots")}</span>
+      <div className="flex gap-2.5 w-full justify-start">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
+          <Bot className="h-3.5 w-3.5" />
         </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="text-sm whitespace-pre-wrap">
-            {displayText}
-            {!isComplete && <span className="inline-block w-1.5 h-4 bg-primary animate-pulse ml-0.5" />}
+        <div className="max-w-[85%] min-w-0 flex flex-col">
+          <div className="flex items-center gap-2 mb-1 text-xs">
+            <span className="font-medium text-muted-foreground">{t("sessions.assistant")}</span>
           </div>
-          {toolUses.length > 0 && (
-            <details className="text-xs text-muted-foreground" open>
-              <summary className="cursor-pointer">
-                {t("sessions.toolCalls", { count: toolUses.length })}
-              </summary>
-              {toolUses.map((tool, i) => (
-                <div key={i} className="mt-1 rounded border p-2 font-mono">
-                  <span className="font-semibold">{tool.name}</span>
-                  <pre className="mt-1 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(tool.input, null, 2)}</pre>
+          {!hasContent && !isComplete ? (
+            <div className="rounded-xl px-3.5 py-2.5 bg-muted overflow-hidden">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <span className="inline-block w-1.5 h-4 bg-primary animate-pulse" />
+                <span>{t("sessions.thinkingDots")}</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {displayText && (
+                <div className="rounded-xl px-3.5 py-2.5 bg-muted overflow-hidden min-w-0 max-w-full">
+                  <div className="markdown-prose overflow-hidden">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                      {displayText}
+                    </ReactMarkdown>
+                    {!isComplete && <span className="inline-block w-1.5 h-4 bg-primary animate-pulse ml-0.5" />}
+                  </div>
                 </div>
-              ))}
-            </details>
+              )}
+              {toolUses.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {toolUses.map((tool, i) => (
+                    <StreamingToolBlock key={i} name={tool.name} input={tool.input} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StreamingToolBlock({ name, input }: { name: string; input: unknown }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const inputStr = JSON.stringify(input, null, 2);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(inputStr);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="rounded-md border border-blue-200 bg-blue-50 text-sm overflow-hidden">
+      <button
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-left text-blue-700 hover:bg-blue-100 transition-colors min-w-0"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? (
+          <ChevronRight className="h-3 w-3 shrink-0 rotate-90" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
+        <Wrench className="h-3 w-3 shrink-0" />
+        <span className="font-mono font-medium truncate">[{name}]</span>
+      </button>
+      {expanded && (
+        <div className="border-t border-blue-200 px-3 py-2 relative">
+          <button
+            onClick={handleCopy}
+            className="absolute top-1.5 right-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-blue-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+            title={t("sessions.copy")}
+          >
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? t("sessions.copied") : t("sessions.copy")}
+          </button>
+          <pre className="text-xs font-mono whitespace-pre-wrap break-all text-blue-800 max-h-64 overflow-auto">
+            {inputStr}
+          </pre>
         </div>
       )}
     </div>
