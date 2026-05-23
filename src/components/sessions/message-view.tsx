@@ -5,13 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, RotateCw, Copy, Check } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, ArrowUp, RotateCw, Copy, Check } from "lucide-react";
 import type { Message, ContentBlock } from "@/types";
+import { InlineImages, stripImagePrompt } from "./inline-image";
 
 interface MessageViewProps {
   messages: Message[];
   initialSearchQuery?: string;
   onRefresh?: () => void;
+  flat?: boolean;
 }
 
 function formatTimestamp(ts: number | null): string {
@@ -19,15 +24,25 @@ function formatTimestamp(ts: number | null): string {
   return new Date(ts).toLocaleString();
 }
 
-function highlightText(text: string, query: string): React.ReactNode {
+function highlightText(text: string, query: string, matchOffset: number, currentMatch: number): React.ReactNode {
   if (!query.trim()) return text;
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const parts = text.split(new RegExp(`(${escaped})`, "gi"));
-  return parts.map((part, i) =>
-    part.toLowerCase() === query.toLowerCase()
-      ? <mark key={i} className="bg-yellow-200 rounded px-0.5">{part}</mark>
-      : part
-  );
+  let localIdx = 0;
+  return parts.map((part, i) => {
+    if (part.toLowerCase() === query.toLowerCase()) {
+      const globalIdx = matchOffset + localIdx;
+      localIdx++;
+      const isCurrent = globalIdx === currentMatch;
+      return (
+        <mark key={i} data-match-idx={globalIdx} className={cn(
+          "rounded px-0.5",
+          isCurrent ? "bg-yellow-300 ring-1 ring-yellow-500" : "bg-yellow-100"
+        )}>{part}</mark>
+      );
+    }
+    return part;
+  });
 }
 
 function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "tool_use" }; query: string; dark?: boolean }) {
@@ -93,22 +108,13 @@ function ToolResultBlock({ block, query, dark }: { block: ContentBlock & { type:
             [Result]
           </div>
         </CollapsibleTrigger>
-        <pre className={cn(
-          "px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
-          dark ? "text-amber-100" : "text-amber-800"
-        )}>
-          {query ? highlightText(displayText, query) : displayText}
-        </pre>
-        {truncated && !expanded && (
-          <button
-            onClick={() => setExpanded(true)}
-            className={cn(
-              "px-3 py-1 text-xs",
-              dark ? "text-amber-200 hover:text-amber-100" : "text-amber-600 hover:text-amber-800"
-            )}
-          >
-            {t("sessions.showMore")}
-          </button>
+        {expanded && (
+          <pre className={cn(
+            "px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
+            dark ? "text-amber-100" : "text-amber-800"
+          )}>
+            {query ? highlightText(displayText, query) : displayText}
+          </pre>
         )}
       </div>
     </Collapsible>
@@ -130,46 +136,56 @@ function ThinkingBlock({ block }: { block: ContentBlock & { type: "thinking" } }
   );
 }
 
-function TextBlock({ text, query, dark }: { text: string; query: string; dark?: boolean }) {
+function TextBlock({ text, query, dark, matchOffset, currentMatch }: { text: string; query: string; dark?: boolean; matchOffset?: number; currentMatch?: number }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const needsCollapse = text.length > 200;
+  const needsCollapse = text.length > 800;
 
-  if (!needsCollapse) {
+  // User messages: plain text (strip image prompt lines)
+  if (dark) {
+    const display = stripImagePrompt(text);
     return (
       <div className="whitespace-pre-wrap break-all text-sm overflow-hidden">
-        {query ? highlightText(text, query) : text}
+        {query ? highlightText(display, query, matchOffset ?? 0, currentMatch ?? -1) : display}
       </div>
     );
+  }
+
+  // Assistant messages with search: highlight text (skip markdown during search)
+  if (query.trim()) {
+    return (
+      <div className="markdown-prose overflow-hidden whitespace-pre-wrap break-words text-sm">
+        {highlightText(text, query, matchOffset ?? 0, currentMatch ?? -1)}
+      </div>
+    );
+  }
+
+  // Assistant messages: markdown rendering
+  const content = (
+    <div className="markdown-prose overflow-hidden">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+
+  if (!needsCollapse) {
+    return content;
   }
 
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded} className="overflow-hidden">
       <div className="relative">
-        <div className={cn("whitespace-pre-wrap break-all text-sm overflow-hidden", !expanded && "max-h-24")}>
-          {query ? highlightText(text, query) : text}
+        <div className={cn("overflow-hidden", !expanded && "max-h-48")}>
+          {content}
         </div>
         {!expanded && (
-          <div className={cn(
-            "absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent",
-            dark ? "from-blue-500/90" : "from-muted/90"
-          )} />
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-muted/90 to-transparent" />
         )}
       </div>
       <CollapsibleTrigger asChild>
-        <button
-          className={cn(
-            "mt-1 inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs transition-colors",
-            dark
-              ? "text-blue-100/90 hover:text-blue-100 hover:bg-white/10"
-              : "text-foreground/60 hover:text-foreground hover:bg-muted"
-          )}
-        >
-          {expanded ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
+        <button className="mt-1 inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs text-foreground/60 hover:text-foreground hover:bg-muted transition-colors">
+          {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           {expanded ? t("sessions.collapse") : t("sessions.expand")}
         </button>
       </CollapsibleTrigger>
@@ -212,10 +228,10 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function renderBlock(block: ContentBlock, query: string, dark?: boolean): React.ReactNode {
+function renderBlock(block: ContentBlock, query: string, dark?: boolean, matchOffset?: number, currentMatch?: number): React.ReactNode {
   switch (block.type) {
     case "text":
-      return <TextBlock text={block.text} query={query} dark={dark} />;
+      return <TextBlock text={block.text} query={query} dark={dark} matchOffset={matchOffset} currentMatch={currentMatch} />;
     case "tool_use":
       return <ToolUseBlock block={block} query={query} dark={dark} />;
     case "tool_result":
@@ -227,45 +243,156 @@ function renderBlock(block: ContentBlock, query: string, dark?: boolean): React.
   }
 }
 
-export function MessageView({ messages, initialSearchQuery, onRefresh }: MessageViewProps) {
+export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: MessageViewProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || "");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const matchRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (initialSearchQuery) setSearchQuery(initialSearchQuery);
   }, [initialSearchQuery]);
 
-  const matchIndices = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return messages.reduce<number[]>((acc, msg, i) => {
-      const hasMatch = msg.content.some(block => {
-        if (block.type === "text") return block.text.toLowerCase().includes(q);
-        if (block.type === "tool_use") return block.name.toLowerCase().includes(q) || JSON.stringify(block.input).toLowerCase().includes(q);
-        if (block.type === "tool_result") return JSON.stringify(block.content).toLowerCase().includes(q);
-        if (block.type === "thinking") return block.thinking.toLowerCase().includes(q);
-        return false;
+  const searchState = useMemo(() => {
+    if (!searchQuery.trim()) return { total: 0, offsets: new Map<string, number>() };
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "gi");
+    const offsets = new Map<string, number>();
+    let total = 0;
+    messages.forEach((msg, mi) => {
+      msg.content.forEach((block, bi) => {
+        if (block.type !== "text") return;
+        offsets.set(`${mi}-${bi}`, total);
+        const m = block.text.match(regex);
+        total += m ? m.length : 0;
       });
-      if (hasMatch) acc.push(i);
-      return acc;
-    }, []);
+    });
+    return { total, offsets };
   }, [messages, searchQuery]);
 
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [searchQuery]);
+  const [currentOcc, setCurrentOcc] = useState(0);
+  useEffect(() => { setCurrentOcc(0); }, [searchQuery]);
+
+  const userNavigated = useRef(false);
+
+  const navigateMatch = (dir: 1 | -1) => {
+    if (searchState.total === 0) return;
+    setCurrentOcc((prev) => (prev + dir + searchState.total) % searchState.total);
+    userNavigated.current = true;
+  };
 
   useEffect(() => {
-    if (matchIndices.length > 0) {
-      const el = matchRefs.current.get(currentIndex);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (userNavigated.current) {
+      const timer = setTimeout(() => {
+        const el = document.querySelector(`[data-match-idx="${currentOcc}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      userNavigated.current = false;
+      return () => clearTimeout(timer);
     }
-  }, [currentIndex, matchIndices]);
+  }, [currentOcc]);
 
-  const isHighlighted = (i: number) => matchIndices.includes(i);
-  const isCurrent = (i: number) => matchIndices[currentIndex] === i;
+  const messageList = (
+    <div className="space-y-4 p-4 overflow-hidden max-w-full">
+      {messages.map((msg, i) => {
+        const isUser = msg.role === "user";
+        return (
+          <div
+            key={i}
+            className={cn(
+              "flex gap-2.5 w-full",
+              isUser ? "justify-end" : "justify-start",
+            )}
+          >
+            {/* Avatar (left for assistant) */}
+            {!isUser && (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
+                <Bot className="h-3.5 w-3.5" />
+              </div>
+            )}
+
+            {/* Bubble */}
+            <div className={cn("max-w-[85%] min-w-0 flex flex-col", isUser && "items-end")}>
+              <div className="flex items-center gap-2 mb-1 text-xs">
+                <span className="font-medium text-muted-foreground">
+                  {isUser ? t("sessions.user") : t("sessions.assistant")}
+                </span>
+                {msg.timestamp && (
+                  <span className="text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
+                )}
+              </div>
+              <div className={cn(
+                "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0 max-w-full",
+                isUser ? "bg-blue-500 text-white" : "bg-muted"
+              )}>
+                {isUser && <InlineImages text={extractMessageText(msg)} />}
+                {msg.content.map((block, j) => (
+                  <div key={j} className="overflow-hidden">
+                    {renderBlock(block, searchQuery, isUser, searchState.offsets.get(`${i}-${j}`) ?? 0, currentOcc)}
+                  </div>
+                ))}
+              </div>
+              <CopyButton text={extractMessageText(msg)} />
+            </div>
+
+            {/* Avatar (right for user) */}
+            {isUser && (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
+                <User className="h-3.5 w-3.5" />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Flat mode: no ScrollArea — parent controls scrolling, search bar sticky at top
+  if (flat) {
+    return (
+      <>
+        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-2 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("sessions.search")}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          {searchState.total > 0 && (
+            <div className="flex items-center gap-0">
+              <span className="text-xs text-muted-foreground whitespace-nowrap pr-1">
+                {currentOcc + 1}/{searchState.total}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => navigateMatch(-1)}
+              >
+                <ArrowUp className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => navigateMatch(1)}
+              >
+                <ArrowDown className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          {searchQuery && searchState.total === 0 && (
+            <span className="text-xs text-muted-foreground">{t("sessions.noResults")}</span>
+          )}
+          {onRefresh && (
+            <Button variant="ghost" size="icon-xs" onClick={onRefresh}>
+              <RotateCw className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+        {messageList}
+      </>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -280,21 +407,28 @@ export function MessageView({ messages, initialSearchQuery, onRefresh }: Message
             className="h-8 pl-8 text-sm"
           />
         </div>
-        {matchIndices.length > 0 && (
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {currentIndex + 1}/{matchIndices.length}
+        {searchState.total > 0 && (
+          <div className="flex items-center gap-0">
+            <span className="text-xs text-muted-foreground whitespace-nowrap pr-1">
+              {currentOcc + 1}/{searchState.total}
             </span>
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={() => setCurrentIndex((currentIndex + 1) % matchIndices.length)}
+              onClick={() => navigateMatch(-1)}
+            >
+              <ArrowUp className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => navigateMatch(1)}
             >
               <ArrowDown className="h-3 w-3" />
             </Button>
           </div>
         )}
-        {searchQuery && matchIndices.length === 0 && (
+        {searchQuery && searchState.total === 0 && (
           <span className="text-xs text-muted-foreground">{t("sessions.noResults")}</span>
         )}
         {onRefresh && (
@@ -306,60 +440,7 @@ export function MessageView({ messages, initialSearchQuery, onRefresh }: Message
 
       {/* Messages */}
       <ScrollArea className="flex-1 min-h-0 message-scroll">
-        <div className="space-y-4 p-4 overflow-hidden max-w-full">
-          {messages.map((msg, i) => {
-            const isUser = msg.role === "user";
-            return (
-              <div
-                key={i}
-                ref={(el) => { if (el && isHighlighted(i)) matchRefs.current.set(i, el); }}
-                className={cn(
-                  "flex gap-2.5 w-full",
-                  isUser ? "justify-end" : "justify-start",
-                  isCurrent(i) && "ring-2 ring-yellow-300 rounded-lg px-1 py-0.5",
-                  isHighlighted(i) && !isCurrent(i) && "bg-yellow-50/30 rounded-lg px-1 py-0.5",
-                )}
-              >
-                {/* Avatar (left for assistant) */}
-                {!isUser && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
-                    <Bot className="h-3.5 w-3.5" />
-                  </div>
-                )}
-
-                {/* Bubble */}
-                <div className={cn("max-w-[85%] min-w-0 flex flex-col", isUser && "items-end")}>
-                  <div className="flex items-center gap-2 mb-1 text-xs">
-                    <span className="font-medium text-muted-foreground">
-                      {isUser ? t("sessions.user") : t("sessions.assistant")}
-                    </span>
-                    {msg.timestamp && (
-                      <span className="text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
-                    )}
-                  </div>
-                  <div className={cn(
-                    "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0 max-w-full",
-                    isUser ? "bg-blue-500 text-white" : "bg-muted"
-                  )}>
-                    {msg.content.map((block, j) => (
-                      <div key={j} className="overflow-hidden">
-                        {renderBlock(block, searchQuery, isUser)}
-                      </div>
-                    ))}
-                  </div>
-                  <CopyButton text={extractMessageText(msg)} />
-                </div>
-
-                {/* Avatar (right for user) */}
-                {isUser && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
-                    <User className="h-3.5 w-3.5" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {messageList}
       </ScrollArea>
     </div>
   );
