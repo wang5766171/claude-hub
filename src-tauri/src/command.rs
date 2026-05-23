@@ -85,7 +85,6 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
     };
 
     if cfg!(target_os = "windows") {
-        // Check if Windows Terminal is available (use "where" to avoid dialog popup)
         let has_wt = std::process::Command::new("cmd")
             .args(["/C", "where wt >nul 2>nul"])
             .creation_flags(0x00000008)
@@ -94,14 +93,17 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
             .unwrap_or(false);
 
         if has_wt {
-            let child = std::process::Command::new("cmd")
-                .args(["/C", &format!("wt -d \"{}\" -- cmd /K {}", project_path, claude_cmd)])
-                .creation_flags(0x00000008)
+            // Spawn wt directly — avoids nested quoting issues with cmd /C
+            let child = std::process::Command::new("wt")
+                .args(["-d", project_path])
+                .args(["--", "cmd", "/K", &claude_cmd])
                 .spawn()?;
             Ok(child.id())
         } else {
+            // Use .current_dir() instead of cd /D to avoid quoting issues
             let child = std::process::Command::new("cmd")
-                .args(["/K", &format!("cd /D \"{}\" && {}", project_path, claude_cmd)])
+                .args(["/K", &claude_cmd])
+                .current_dir(project_path)
                 .spawn()?;
             Ok(child.id())
         }
