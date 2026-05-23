@@ -254,16 +254,9 @@ fn get_level1_dir_cmd(encoded_name: String) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn get_mergeable_projects(encoded_name: String) -> Result<Vec<String>, String> {
-    let decoded = project::decode_project_path(&encoded_name);
-    let level1 = project::get_level1_dir(&decoded).ok_or("Cannot determine level-1 directory")?;
-
     let projects = project::scan_projects();
     let mergeable: Vec<String> = projects.iter()
         .filter(|p| p.encoded_name != encoded_name)
-        .filter(|p| {
-            let p_level1 = project::get_level1_dir(&p.path.to_string_lossy());
-            p_level1.as_ref() == Some(&level1)
-        })
         .map(|p| p.encoded_name.clone())
         .collect();
     Ok(mergeable)

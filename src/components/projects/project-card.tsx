@@ -11,7 +11,6 @@ interface ProjectCardProps {
   meta?: ProjectMeta;
   managementMode?: boolean;
   checked?: boolean;
-  disabled?: boolean;
   onCheck?: () => void;
   mergedCount?: number;
   onTagClick?: (tag: string) => void;
@@ -24,7 +23,6 @@ export function ProjectCard({
   meta,
   managementMode,
   checked,
-  disabled,
   onCheck,
   mergedCount,
   onTagClick,
@@ -36,8 +34,7 @@ export function ProjectCard({
     <Card
       className={cn(
         "relative cursor-pointer transition-colors hover:border-primary/50",
-        selected && "border-primary ring-1 ring-primary/20",
-        disabled && managementMode && "opacity-50"
+        selected && "border-primary ring-1 ring-primary/20"
       )}
       onClick={managementMode ? undefined : onClick}
     >
@@ -46,19 +43,15 @@ export function ProjectCard({
           className="absolute top-2 left-2 z-10"
           onClick={(e) => {
             e.stopPropagation();
-            if (!disabled) onCheck?.();
+            onCheck?.();
           }}
         >
           <input
             type="checkbox"
             checked={checked}
-            disabled={disabled}
             className="h-4 w-4"
           />
         </div>
-      )}
-      {disabled && managementMode && (
-        <div className="absolute inset-0 bg-background/50 rounded-lg" />
       )}
       {mergedCount != null && mergedCount > 0 && (
         <div className="absolute top-2 right-2 z-10">

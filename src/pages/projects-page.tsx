@@ -15,16 +15,6 @@ interface ProjectsPageProps {
   onViewSessions?: (encodedName: string) => void;
 }
 
-function getLevel1FromPath(path: string): string | null {
-  // Normalize path separators to backslash for Windows
-  const normalized = path.replace(/\//g, "\\");
-  const parts = normalized.split("\\");
-  if (parts.length < 2) return null;
-  // e.g. "D:\MyCodes\claude-hub" -> parts[0]="D:", parts[1]="MyCodes"
-  // Level1 = "D:\MyCodes"
-  return parts[0] + "\\" + parts[1];
-}
-
 export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   const { t } = useTranslation();
   const { data: projects, loading, refetch } = useInvoke<Project[]>("scan_projects");
@@ -37,7 +27,6 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   // Management mode state
   const [managementMode, setManagementMode] = useState(false);
   const [checkedProjects, setCheckedProjects] = useState<Set<string>>(new Set());
-  const [level1Filter, setLevel1Filter] = useState<string | null>(null);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -56,22 +45,11 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
     refetch();
   };
 
-  const handleCheck = async (encodedName: string) => {
+  const handleCheck = (encodedName: string) => {
     const newChecked = new Set(checkedProjects);
     if (newChecked.has(encodedName)) {
       newChecked.delete(encodedName);
-      if (newChecked.size === 0) {
-        setLevel1Filter(null);
-      }
     } else {
-      // If this is the first check, set the level1 filter
-      if (newChecked.size === 0) {
-        const project = projects?.find(p => p.encoded_name === encodedName);
-        if (project) {
-          const level1 = getLevel1FromPath(project.path);
-          setLevel1Filter(level1);
-        }
-      }
       newChecked.add(encodedName);
     }
     setCheckedProjects(newChecked);
@@ -80,19 +58,16 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   const toggleManagementMode = () => {
     setManagementMode(!managementMode);
     setCheckedProjects(new Set());
-    setLevel1Filter(null);
   };
 
   const clearSelection = () => {
     setCheckedProjects(new Set());
-    setLevel1Filter(null);
   };
 
   const handleMergeComplete = () => {
     refetch();
     refetchMerges();
     setCheckedProjects(new Set());
-    setLevel1Filter(null);
     setManagementMode(false);
   };
 
@@ -100,13 +75,6 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
   const getMergedCount = (encodedName: string): number => {
     if (!merges || !merges[encodedName]) return 0;
     return merges[encodedName].length;
-  };
-
-  // Determine if a project is disabled (different level1 from filter)
-  const isDisabled = (project: Project): boolean => {
-    if (!managementMode || level1Filter === null) return false;
-    if (checkedProjects.has(project.encoded_name)) return false;
-    return getLevel1FromPath(project.path) !== level1Filter;
   };
 
   // Filter projects by search query and selected tag
@@ -234,7 +202,6 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
               meta={projectMetas?.[project.encoded_name]}
               managementMode={managementMode}
               checked={checkedProjects.has(project.encoded_name)}
-              disabled={isDisabled(project)}
               onCheck={() => handleCheck(project.encoded_name)}
               mergedCount={getMergedCount(project.encoded_name)}
               onTagClick={(tag) => setSelectedTag(selectedTag === tag ? null : tag)}

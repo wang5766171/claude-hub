@@ -2,6 +2,7 @@
   "common": {
     "cancel": "取消",
     "save": "保存",
+    "edit": "编辑",
     "add": "添加",
     "saving": "保存中...",
     "default": "默认",
