@@ -415,6 +415,12 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                 if (!selectedSession) {
                   setSelectedSession(sid);
                 }
+                // Scroll to bottom immediately to show user message, ready for assistant stream
+                requestAnimationFrame(() => {
+                  if (messageAreaRef.current) {
+                    messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+                  }
+                });
               }}
             />
           </>
