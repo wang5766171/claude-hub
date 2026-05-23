@@ -1,12 +1,12 @@
 <div align="center">
 
-# Claude Hub
+# Jishu Hub (机枢)
 
-**一款 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 桌面管理客户端 —— 项目、会话、配置，一目了然。**
+**一款多智能体桌面管理客户端，支持插件架构 —— 轻松管理 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 项目、会话、配置，一目了然。**
 
-仓库：[GitHub](https://github.com/wang5766171/claude-hub) | [Gitee（国内镜像）](https://gitee.com/wangzwa/claude-hub)
+仓库：[GitHub](https://github.com/wang5766171/jishu-hub) | [Gitee（国内镜像）](https://gitee.com/wangzwa/jishu-hub)
 
-[![下载](https://img.shields.io/badge/下载-最新版本-brightgreen.svg)](https://gitee.com/wangzwa/claude-hub/releases)
+[![下载](https://img.shields.io/badge/下载-最新版本-brightgreen.svg)](https://gitee.com/wangzwa/jishu-hub/releases)
 
 [English](./README.md) | [中文文档](#)
 
@@ -15,7 +15,7 @@
 [![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 [![Rust](https://img.shields.io/badge/Rust-1.77+-dea584.svg)](https://www.rust-lang.org/)
 
-[报告问题](https://gitee.com/wangzwa/claude-hub/issues) · [功能建议](https://gitee.com/wangzwa/claude-hub/issues)
+[报告问题](https://gitee.com/wangzwa/jishu-hub/issues) · [功能建议](https://gitee.com/wangzwa/jishu-hub/issues)
 
 </div>
 
@@ -32,9 +32,9 @@
 
 > **一句话介绍** —— 如果你每天都在用 Claude Code CLI，想要一个可视化界面来管理项目、浏览会话历史、编辑配置文件，而不用手动改 JSON，这就是你要的工具。
 
-## 为什么需要 Claude Hub？
+## 为什么需要 Jishu Hub（机枢）？
 
-Claude Code 很强大，但管理多个项目、翻看会话记录、手动编辑 `settings.json` 总是有点麻烦。Claude Hub 提供了**全图形化的操作界面**：
+Claude Code 很强大，但管理多个项目、翻看会话记录、手动编辑 `settings.json` 总是有点麻烦。Jishu Hub 提供了**全图形化的操作界面**，并采用多智能体插件架构，让你可以扩展和定制工作流：
 
 - 一眼看到所有项目
 - 浏览和搜索完整对话历史
@@ -154,11 +154,17 @@ src-tauri/src/
 ├── main.rs          # Tauri 入口
 ├── lib.rs           # IPC 命令注册
 ├── project.rs       # 项目扫描、路径编码
+├── project_config.rs # 项目级配置管理
 ├── config.rs        # 配置读写、备份、导入导出
 ├── session.rs       # JSONL 会话解析
 ├── history.rs       # 命令历史解析
 ├── command.rs       # 自定义命令管理
-└── hub.rs           # ~/.claude-hub/ 元数据
+├── chat.rs          # 聊天集成
+├── image.rs         # 图片处理工具
+├── hub.rs           # ~/.jishu-hub/ 元数据
+└── agent/           # 多智能体插件架构
+    ├── mod.rs           # 智能体模块接口
+    └── claude_code.rs   # Claude Code 智能体插件
 
 src/
 ├── App.tsx          # 应用入口、页面路由
@@ -182,8 +188,8 @@ src/
 | `~/.claude/projects/` | Claude Code 项目数据（只读） |
 | `~/.claude/settings.json` | 全局配置（读写） |
 | `~/.claude/backups/` | 配置备份文件 |
-| `~/.claude-hub/presets.json` | 自定义配置预设 |
-| `~/.claude-hub/sessions.json` | 会话名称映射 |
+| `~/.jishu-hub/presets.json` | 自定义配置预设 |
+| `~/.jishu-hub/sessions.json` | 会话名称映射 |
 
 ## 参与贡献
 

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn hub_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-    let dir = home.join(".claude-hub");
+    let dir = home.join(".jishu-hub");
     std::fs::create_dir_all(&dir)?;
     Ok(dir)
 }

@@ -1,12 +1,12 @@
 <div align="center">
 
-# Claude Hub
+# Jishu Hub (机枢)
 
-**A desktop GUI for managing [Claude Code](https://docs.anthropic.com/en/docs/claude-code) projects, sessions, and configuration.**
+**A multi-agent desktop hub with plugin architecture for managing [Claude Code](https://docs.anthropic.com/en/docs/claude-code) projects, sessions, and configuration.**
 
-Repo: [GitHub](https://github.com/wang5766171/claude-hub) | [Gitee (国内镜像)](https://gitee.com/wangzwa/claude-hub)
+Repo: [GitHub](https://github.com/wang5766171/jishu-hub) | [Gitee (国内镜像)](https://gitee.com/wangzwa/jishu-hub)
 
-[![Download](https://img.shields.io/badge/Download-latest%20release-brightgreen.svg)](https://github.com/wang5766171/claude-hub/releases/latest)
+[![Download](https://img.shields.io/badge/Download-latest%20release-brightgreen.svg)](https://github.com/wang5766171/jishu-hub/releases/latest)
 
 [English](#features) | [中文文档](./README.zh-CN.md)
 
@@ -15,7 +15,7 @@ Repo: [GitHub](https://github.com/wang5766171/claude-hub) | [Gitee (国内镜像
 [![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 [![Rust](https://img.shields.io/badge/Rust-1.77+-dea584.svg)](https://www.rust-lang.org/)
 
-[Report Bug](https://github.com/wang5766171/claude-hub/issues/new?template=bug_report.yml) · [Request Feature](https://github.com/wang5766171/claude-hub/issues/new?template=feature_request.yml) · [Discussions](https://github.com/wang5766171/claude-hub/discussions)
+[Report Bug](https://github.com/wang5766171/jishu-hub/issues/new?template=bug_report.yml) · [Request Feature](https://github.com/wang5766171/jishu-hub/issues/new?template=feature_request.yml) · [Discussions](https://github.com/wang5766171/jishu-hub/discussions)
 
 </div>
 
@@ -32,9 +32,9 @@ Repo: [GitHub](https://github.com/wang5766171/claude-hub) | [Gitee (国内镜像
 
 > **TL;DR** — If you use Claude Code CLI daily and want a visual way to manage projects, browse session history, and edit config without touching JSON files, this is for you.
 
-## Why Claude Hub?
+## Why Jishu Hub?
 
-Claude Code is powerful, but managing multiple projects, digging through session logs, and editing `settings.json` by hand gets tedious. Claude Hub gives you a **point-and-click interface** for all of that:
+Claude Code is powerful, but managing multiple projects, digging through session logs, and editing `settings.json` by hand gets tedious. Jishu Hub gives you a **point-and-click interface** for all of that, with a multi-agent plugin architecture that lets you extend and customize your workflow:
 
 - See all your projects at a glance
 - Browse and search full conversation history
@@ -154,11 +154,17 @@ src-tauri/src/
 ├── main.rs          # Tauri entry point
 ├── lib.rs           # IPC command registration
 ├── project.rs       # Project scanning & path encoding
+├── project_config.rs # Per-project config management
 ├── config.rs        # Config load/save/backup/import/export
 ├── session.rs       # JSONL session parsing
 ├── history.rs       # Command history parsing
 ├── command.rs       # Custom command management
-└── hub.rs           # ~/.claude-hub/ metadata
+├── chat.rs          # Chat integration
+├── image.rs         # Image processing utilities
+├── hub.rs           # ~/.jishu-hub/ metadata
+└── agent/           # Multi-agent plugin architecture
+    ├── mod.rs           # Agent module interface
+    └── claude_code.rs   # Claude Code agent plugin
 
 src/
 ├── App.tsx          # App entry & page routing
@@ -182,8 +188,8 @@ src/
 | `~/.claude/projects/` | Claude Code project data (read-only) |
 | `~/.claude/settings.json` | Global config (read/write) |
 | `~/.claude/backups/` | Config backup files |
-| `~/.claude-hub/presets.json` | Custom config presets |
-| `~/.claude-hub/sessions.json` | Session name mappings |
+| `~/.jishu-hub/presets.json` | Custom config presets |
+| `~/.jishu-hub/sessions.json` | Session name mappings |
 
 ## Contributing
 

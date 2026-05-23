@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Claude Hub",
-  "version": "0.3.1",
-  "identifier": "com.claude-hub.app",
+  "productName": "Jishu Hub",
+  "version": "0.4.0",
+  "identifier": "com.jishu-hub.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Claude Hub",
+        "title": "Jishu Hub",
         "width": 1100,
         "height": 700,
         "minWidth": 800,

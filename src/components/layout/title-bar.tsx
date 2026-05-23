@@ -23,7 +23,7 @@ export function TitleBar() {
   return (
     <div className="flex items-center h-8 border-b bg-background px-3" data-tauri-drag-region>
       <div className="flex-1 text-xs text-muted-foreground" data-tauri-drag-region>
-        Claude Hub
+        Jishu Hub
       </div>
       <Button
         variant="ghost"

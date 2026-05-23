@@ -18,7 +18,7 @@ i18n
     },
     detection: {
       order: ["localStorage", "navigator"],
-      lookupLocalStorage: "claude-hub-lang",
+      lookupLocalStorage: "jishu-hub-lang",
       caches: ["localStorage"],
     },
   });
