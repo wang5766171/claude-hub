@@ -13,13 +13,6 @@ pub struct CustomCommand {
     pub project_path: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CommandOutput {
-    pub success: bool,
-    pub stdout: String,
-    pub stderr: String,
-    pub code: Option<i32>,
-}
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Commands {
@@ -149,26 +142,52 @@ fn which_terminal() -> Result<&'static str, Box<dyn std::error::Error>> {
     Ok("xterm")
 }
 
-pub fn execute_command(command: &str, cwd: Option<&str>) -> Result<CommandOutput, Box<dyn std::error::Error>> {
-    let mut cmd = if cfg!(target_os = "windows") {
-        let mut c = std::process::Command::new("cmd");
-        c.args(["/C", command]);
-        c
+/// Run a command in a new terminal window. The terminal stays open after the command finishes.
+pub fn run_in_terminal(command: &str, cwd: Option<&str>) -> Result<bool, Box<dyn std::error::Error>> {
+    if cfg!(target_os = "windows") {
+        let has_wt = std::process::Command::new("cmd")
+            .args(["/C", "where wt >nul 2>nul"])
+            .creation_flags(0x00000008)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+
+        if has_wt {
+            let mut cmd = std::process::Command::new("wt");
+            if let Some(dir) = cwd {
+                cmd.args(["-d", dir]);
+            }
+            cmd.args(["--", "cmd", "/K", command])
+                .spawn()?;
+        } else {
+            let mut cmd = std::process::Command::new("cmd");
+            cmd.args(["/K", command]);
+            if let Some(dir) = cwd {
+                cmd.current_dir(dir);
+            }
+            cmd.spawn()?;
+        }
+    } else if cfg!(target_os = "macos") {
+        let shell_cmd = match cwd {
+            Some(dir) => format!("cd '{}' && {}; exec bash", dir, command),
+            None => format!("{}; exec bash", command),
+        };
+        std::process::Command::new("open")
+            .args(["-a", "Terminal"])
+            .spawn()?;
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::process::Command::new("osascript")
+            .args(["-e", &format!("tell application \"Terminal\" to do script \"{}\"", shell_cmd)])
+            .spawn()?;
     } else {
-        let mut c = std::process::Command::new("sh");
-        c.args(["-c", command]);
-        c
-    };
-
-    if let Some(dir) = cwd {
-        cmd.current_dir(dir);
+        let terminal = which_terminal()?;
+        let shell_cmd = match cwd {
+            Some(dir) => format!("cd '{}' && {}; exec sh", dir, command),
+            None => format!("{}; exec sh", command),
+        };
+        std::process::Command::new(terminal)
+            .args(["-e", "sh", "-c", &shell_cmd])
+            .spawn()?;
     }
-
-    let output = cmd.output()?;
-    Ok(CommandOutput {
-        success: output.status.success(),
-        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
-        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        code: output.status.code(),
-    })
+    Ok(true)
 }

@@ -140,13 +140,6 @@ export interface CustomCommand {
   projectPath: string | null;
 }
 
-export interface CommandOutput {
-  success: boolean;
-  stdout: string;
-  stderr: string;
-  code: number | null;
-}
-
 export interface ProjectPermissions {
   defaultMode: string | null;
   allow: string[] | null;

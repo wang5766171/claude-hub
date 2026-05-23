@@ -1,51 +1,40 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { AddCommandDialog } from "@/components/commands/add-command-dialog";
-import { CommandOutputDialog } from "@/components/commands/command-output-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Play, Pencil, Trash2, Terminal } from "lucide-react";
-import type { CustomCommand, CommandOutput } from "@/types";
+import type { CustomCommand } from "@/types";
 
 const BUILT_IN_COMMANDS = [
   { name: "claude --version", command: "claude --version" },
   { name: "claude mcp list", command: "claude mcp list" },
 ];
 
+const COOLDOWN_MS = 2000;
+
 export function CommandsPage() {
   const { t } = useTranslation();
   const { data: commands, loading, refetch } = useInvoke<CustomCommand[]>("list_custom_commands");
   const [addOpen, setAddOpen] = useState(false);
   const [editCmd, setEditCmd] = useState<CustomCommand | null>(null);
-  const [outputOpen, setOutputOpen] = useState(false);
-  const [output, setOutput] = useState<CommandOutput | null>(null);
-  const [outputName, setOutputName] = useState("");
-  const [running, setRunning] = useState<string | null>(null);
+  const [runningKey, setRunningKey] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const handleRun = async (cmd: string, name: string, cwd?: string | null) => {
-    setRunning(name);
+  const handleRun = useCallback(async (key: string, cmd: string, cwd?: string | null) => {
+    if (runningKey) return;
+    setRunningKey(key);
     try {
-      const result = await invokeCommand<CommandOutput>("execute_command", {
+      await invokeCommand("run_in_terminal", {
         command: cmd,
         cwd: cwd || undefined,
       });
-      setOutput(result);
-      setOutputName(name);
-      setOutputOpen(true);
     } catch (err) {
-      setOutput({
-        success: false,
-        stdout: "",
-        stderr: String(err),
-        code: null,
-      });
-      setOutputName(name);
-      setOutputOpen(true);
-    } finally {
-      setRunning(null);
+      console.error("Failed to run command:", err);
     }
-  };
+    timerRef.current = setTimeout(() => setRunningKey(null), COOLDOWN_MS);
+  }, [runningKey]);
 
   const handleDelete = async (id: string) => {
     await invokeCommand("delete_custom_command", { id });
@@ -83,7 +72,7 @@ export function CommandsPage() {
 
       {/* Built-in commands */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">{t("commands.builtIn")}</h3>
+        <h3 className="sm font-medium text-muted-foreground">{t("commands.builtIn")}</h3>
         <div className="space-y-2">
           {BUILT_IN_COMMANDS.map((cmd) => (
             <div key={cmd.name} className="flex items-center justify-between rounded-md border px-4 py-3">
@@ -94,11 +83,11 @@ export function CommandsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleRun(cmd.command, cmd.name)}
-                disabled={running === cmd.name}
+                onClick={() => handleRun(cmd.name, cmd.command)}
+                disabled={runningKey === cmd.name}
               >
                 <Play className="mr-1 h-3 w-3" />
-                {running === cmd.name ? t("commands.running") : t("commands.run")}
+                {runningKey === cmd.name ? t("commands.running") : t("commands.run")}
               </Button>
             </div>
           ))}
@@ -128,11 +117,11 @@ export function CommandsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRun(cmd.command, cmd.name, cmd.projectPath)}
-                    disabled={running === cmd.name}
+                    onClick={() => handleRun(cmd.id, cmd.command, cmd.projectPath)}
+                    disabled={runningKey === cmd.id}
                   >
                     <Play className="mr-1 h-3 w-3" />
-                    {running === cmd.name ? t("commands.running") : t("commands.run")}
+                    {runningKey === cmd.id ? t("commands.running") : t("commands.run")}
                   </Button>
                   <Button variant="ghost" size="icon-xs" onClick={() => handleEdit(cmd)}>
                     <Pencil className="h-3 w-3" />
@@ -152,13 +141,6 @@ export function CommandsPage() {
         onOpenChange={(open) => { setAddOpen(open); if (!open) setEditCmd(null); }}
         editCommand={editCmd}
         onSaved={handleSaved}
-      />
-
-      <CommandOutputDialog
-        open={outputOpen}
-        onOpenChange={setOutputOpen}
-        output={output}
-        commandName={outputName}
       />
     </div>
   );

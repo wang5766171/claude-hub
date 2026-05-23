@@ -207,8 +207,8 @@ fn cleanup_dead_sessions() -> Result<u32, String> {
 }
 
 #[tauri::command]
-fn execute_command(command: String, cwd: Option<String>) -> Result<command::CommandOutput, String> {
-    command::execute_command(&command, cwd.as_deref()).map_err(|e| e.to_string())
+fn run_in_terminal(command: String, cwd: Option<String>) -> Result<bool, String> {
+    command::run_in_terminal(&command, cwd.as_deref()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -342,7 +342,7 @@ pub fn run() {
             find_session_terminal,
             focus_session_terminal,
             cleanup_dead_sessions,
-            execute_command,
+            run_in_terminal,
             load_project_settings,
             load_project_settings_local,
             save_project_settings,
