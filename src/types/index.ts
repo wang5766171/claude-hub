@@ -132,7 +132,17 @@ export interface BackupEntry {
   timestamp: string | null;
 }
 
-export type Page = "projects" | "sessions" | "config" | "commands";
+export type Page = "chat" | "manage";
+
+export type ManageTab = "projects" | "config" | "commands" | "backups";
+
+export interface AgentInfo {
+  id: string;
+  display_name: string;
+  version: string;
+  icon: string;
+  enabled: boolean;
+}
 
 export interface CustomCommand {
   id: string;

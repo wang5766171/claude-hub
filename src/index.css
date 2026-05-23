@@ -1,7 +1,15 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: hsl(0 0% 100%);
+  /* macOS HIG Design Tokens */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius: 10px;
+
+  /* Light theme */
+  --color-background: hsl(0 0% 98%);
   --color-foreground: hsl(240 10% 3.9%);
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(240 10% 3.9%);
@@ -20,7 +28,6 @@
   --color-border: hsl(240 5.9% 90%);
   --color-input: hsl(240 5.9% 90%);
   --color-ring: hsl(240 5.9% 10%);
-  --radius: 0.5rem;
   --color-sidebar-background: hsl(0 0% 98%);
   --color-sidebar-foreground: hsl(240 5.3% 26.1%);
   --color-sidebar-primary: hsl(240 5.9% 10%);
@@ -29,6 +36,20 @@
   --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
   --color-sidebar-border: hsl(220 13% 91%);
   --color-sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* Material backgrounds */
+  --color-material-sidebar: hsl(240 4% 96% / 0.7);
+  --color-material-panel: hsl(0 0% 100% / 0.8);
+  --color-material-hover: hsl(240 4% 90% / 0.5);
+
+  /* Transition tokens */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Typography */
+  --font-sans: "SF Pro Display", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
 }
 
 @layer base {
@@ -38,12 +59,32 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .message-scroll [data-radix-scroll-area-viewport] > div {
     display: block !important;
     min-width: 100%;
   }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(240 4% 70% / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 4% 70% / 0.5);
 }
 
 /* Markdown prose styles */
@@ -116,28 +157,29 @@
 .markdown-prose code:not(pre code) {
   background: var(--color-muted);
   padding: 0.15em 0.35em;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 0.82em;
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 /* Code blocks */
 .markdown-prose pre {
   background: hsl(220 13% 10%);
   color: hsl(220 14% 88%);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   padding: 0.75em 1em;
   margin: 0.5em 0;
   overflow-x: auto;
   font-size: 0.8rem;
   line-height: 1.5;
+  position: relative;
 }
 .markdown-prose pre code {
   background: none;
   padding: 0;
   border-radius: 0;
   font-size: inherit;
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 /* Syntax highlight (highlight.js classes) */
@@ -177,4 +219,38 @@
 }
 .markdown-prose-dark th {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* macOS-style transition utilities */
+.transition-macos {
+  transition: all var(--transition-normal);
+}
+.transition-fast {
+  transition: all var(--transition-fast);
+}
+
+/* Sidebar tree animation */
+.sidebar-tree-enter {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.sidebar-tree-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all var(--transition-normal);
+}
+
+/* Message appear animation */
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.message-appear {
+  animation: message-slide-in 200ms ease-out;
 }
