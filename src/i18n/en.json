@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancel",
     "save": "Save",
+    "edit": "Edit",
     "add": "Add",
     "saving": "Saving...",
     "default": "default",
@@ -26,6 +27,7 @@
     "noProjectsDesc": "Add a project with a .claude directory to get started",
     "hasClaudeMd": "Has CLAUDE.md",
     "sessionCount": "{{count}} sessions",
+    "notInitialized": "Not initialized, click to run claude init",
     "path": "Path:",
     "sessions": "Sessions",
     "lastActive": "Last Active",

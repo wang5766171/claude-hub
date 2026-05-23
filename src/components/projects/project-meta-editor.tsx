@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { invokeCommand } from "@/hooks/use-invoke";
-import { Pencil, Check, X, Plus } from "lucide-react";
+import { Pencil, CheckCircle2, XCircle, X, Plus } from "lucide-react";
 import type { ProjectMeta } from "@/types";
 
 interface ProjectMetaEditorProps {
@@ -65,8 +65,9 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">{t("projectConfig.metaInfo")}</span>
-          <Button variant="ghost" size="icon-xs" onClick={() => setEditing(true)}>
-            <Pencil className="h-3 w-3" />
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="h-6 text-xs gap-1">
+            <Pencil className="size-3" />
+            {t("common.edit")}
           </Button>
         </div>
         {meta?.custom_name && (
@@ -104,12 +105,14 @@ export function ProjectMetaEditor({ encodedName, meta, allTags, onUpdate }: Proj
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{t("projectConfig.editMetaInfo")}</span>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon-xs" onClick={handleCancel}>
-            <X className="h-3 w-3" />
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" onClick={handleCancel} className="h-6 text-xs gap-1 text-destructive border-destructive/40 hover:bg-destructive/10">
+            <XCircle className="size-3" />
+            {t("common.cancel")}
           </Button>
-          <Button variant="ghost" size="icon-xs" onClick={handleSave}>
-            <Check className="h-3 w-3" />
+          <Button size="sm" onClick={handleSave} className="h-6 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white">
+            <CheckCircle2 className="size-3" />
+            {t("common.save")}
           </Button>
         </div>
       </div>

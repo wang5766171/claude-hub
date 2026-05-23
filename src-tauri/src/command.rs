@@ -153,24 +153,27 @@ pub fn run_in_terminal(command: &str, cwd: Option<&str>) -> Result<bool, Box<dyn
             .unwrap_or(false);
 
         if has_wt {
+            let wrapped = format!("prompt $P$G& @echo %CD%^>{}& @echo.& {}", command, command);
             let mut cmd = std::process::Command::new("wt");
             if let Some(dir) = cwd {
                 cmd.args(["-d", dir]);
             }
-            cmd.args(["--", "cmd", "/K", command])
+            cmd.args(["--", "cmd", "/K", &wrapped])
                 .spawn()?;
         } else {
+            let wrapped = format!("prompt $P$G& @echo %CD%^>{}& @echo.& {}", command, command);
             let mut cmd = std::process::Command::new("cmd");
-            cmd.args(["/K", command]);
+            cmd.args(["/K", &wrapped]);
             if let Some(dir) = cwd {
                 cmd.current_dir(dir);
             }
             cmd.spawn()?;
         }
     } else if cfg!(target_os = "macos") {
+        let escaped = command.replace('\'', "'\\''");
         let shell_cmd = match cwd {
-            Some(dir) => format!("cd '{}' && {}; exec bash", dir, command),
-            None => format!("{}; exec bash", command),
+            Some(dir) => format!("cd '{}' && echo '> {}'; echo; {}; exec bash", dir, escaped, command),
+            None => format!("echo '> {}'; echo; {}; exec bash", escaped, command),
         };
         std::process::Command::new("open")
             .args(["-a", "Terminal"])
@@ -181,9 +184,10 @@ pub fn run_in_terminal(command: &str, cwd: Option<&str>) -> Result<bool, Box<dyn
             .spawn()?;
     } else {
         let terminal = which_terminal()?;
+        let escaped = command.replace('\'', "'\\''");
         let shell_cmd = match cwd {
-            Some(dir) => format!("cd '{}' && {}; exec sh", dir, command),
-            None => format!("{}; exec sh", command),
+            Some(dir) => format!("cd '{}' && echo '> {}'; echo; {}; exec sh", dir, escaped, command),
+            None => format!("echo '> {}'; echo; {}; exec sh", escaped, command),
         };
         std::process::Command::new(terminal)
             .args(["-e", "sh", "-c", &shell_cmd])

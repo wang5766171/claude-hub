@@ -128,6 +128,16 @@ pub fn hide_project(encoded_name: &str) -> Result<(), Box<dyn std::error::Error>
     write_json(&path, &data)
 }
 
+pub fn unhide_project(encoded_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path = hidden_projects_path()?;
+    if !path.exists() {
+        return Ok(());
+    }
+    let mut data: HiddenProjects = read_json(&path)?;
+    data.encoded_names.retain(|e| e != encoded_name);
+    write_json(&path, &data)
+}
+
 pub fn is_project_hidden(encoded_name: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let path = hidden_projects_path()?;
     if !path.exists() {
@@ -135,6 +145,50 @@ pub fn is_project_hidden(encoded_name: &str) -> Result<bool, Box<dyn std::error:
     }
     let data: HiddenProjects = read_json(&path)?;
     Ok(data.encoded_names.contains(&encoded_name.to_string()))
+}
+
+// --- Manual Projects ---
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct ManualProjects {
+    #[serde(default)]
+    pub paths: Vec<String>,
+}
+
+fn manual_projects_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(hub_dir()?.join("manual_projects.json"))
+}
+
+pub fn add_manual_project(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path_obj = manual_projects_path()?;
+    let mut data = if path_obj.exists() {
+        read_json::<ManualProjects>(&path_obj)?
+    } else {
+        ManualProjects::default()
+    };
+    if !data.paths.contains(&path.to_string()) {
+        data.paths.push(path.to_string());
+    }
+    write_json(&path_obj, &data)
+}
+
+pub fn remove_manual_project(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path_obj = manual_projects_path()?;
+    if !path_obj.exists() {
+        return Ok(());
+    }
+    let mut data: ManualProjects = read_json(&path_obj)?;
+    data.paths.retain(|p| p != path);
+    write_json(&path_obj, &data)
+}
+
+pub fn load_manual_projects() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let path = manual_projects_path()?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let data: ManualProjects = read_json(&path)?;
+    Ok(data.paths)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

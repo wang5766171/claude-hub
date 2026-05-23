@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, FileText, MessageSquare } from "lucide-react";
+import { FolderOpen, FileText, MessageSquare, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { invokeCommand } from "@/hooks/use-invoke";
 import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectCardProps {
@@ -11,10 +12,10 @@ interface ProjectCardProps {
   meta?: ProjectMeta;
   managementMode?: boolean;
   checked?: boolean;
-  disabled?: boolean;
   onCheck?: () => void;
   mergedCount?: number;
   onTagClick?: (tag: string) => void;
+  onRefresh?: () => void;
 }
 
 export function ProjectCard({
@@ -24,20 +25,29 @@ export function ProjectCard({
   meta,
   managementMode,
   checked,
-  disabled,
   onCheck,
   mergedCount,
   onTagClick,
+  onRefresh,
 }: ProjectCardProps) {
   const { t } = useTranslation();
   const displayName = meta?.custom_name || project.name;
+
+  const handleInit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await invokeCommand("run_in_terminal", { command: "claude init", cwd: project.path });
+    } catch (err) {
+      console.error("Failed to run claude init:", err);
+    }
+    onRefresh?.();
+  };
 
   return (
     <Card
       className={cn(
         "relative cursor-pointer transition-colors hover:border-primary/50",
-        selected && "border-primary ring-1 ring-primary/20",
-        disabled && managementMode && "opacity-50"
+        selected && "border-primary ring-1 ring-primary/20"
       )}
       onClick={managementMode ? undefined : onClick}
     >
@@ -46,19 +56,15 @@ export function ProjectCard({
           className="absolute top-2 left-2 z-10"
           onClick={(e) => {
             e.stopPropagation();
-            if (!disabled) onCheck?.();
+            onCheck?.();
           }}
         >
           <input
             type="checkbox"
             checked={checked}
-            disabled={disabled}
             className="h-4 w-4"
           />
         </div>
-      )}
-      {disabled && managementMode && (
-        <div className="absolute inset-0 bg-background/50 rounded-lg" />
       )}
       {mergedCount != null && mergedCount > 0 && (
         <div className="absolute top-2 right-2 z-10">
@@ -103,13 +109,23 @@ export function ProjectCard({
             )}
           </div>
         )}
-        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <MessageSquare className="h-3 w-3" />
-            {t("projects.sessionCount", { count: project.session_count })}
-          </span>
-          {project.last_active && <span>{project.last_active}</span>}
-        </div>
+        {!project.initialized ? (
+          <button
+            className="mt-2 flex items-center gap-1.5 text-xs text-amber-500 hover:text-amber-600 transition-colors"
+            onClick={handleInit}
+          >
+            <AlertCircle className="h-3 w-3" />
+            {t("projects.notInitialized")}
+          </button>
+        ) : (
+          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              {t("projects.sessionCount", { count: project.session_count })}
+            </span>
+            {project.last_active && <span>{project.last_active}</span>}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -5,6 +5,7 @@ export interface Project {
   session_count: number;
   last_active: string | null;
   has_claude_md: boolean;
+  initialized: boolean;
 }
 
 export interface ProjectMeta {
