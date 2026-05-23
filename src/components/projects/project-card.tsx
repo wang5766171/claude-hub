@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, FileText, MessageSquare } from "lucide-react";
+import { FolderOpen, FileText, MessageSquare, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { invokeCommand } from "@/hooks/use-invoke";
 import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectCardProps {
@@ -14,6 +15,7 @@ interface ProjectCardProps {
   onCheck?: () => void;
   mergedCount?: number;
   onTagClick?: (tag: string) => void;
+  onRefresh?: () => void;
 }
 
 export function ProjectCard({
@@ -26,9 +28,20 @@ export function ProjectCard({
   onCheck,
   mergedCount,
   onTagClick,
+  onRefresh,
 }: ProjectCardProps) {
   const { t } = useTranslation();
   const displayName = meta?.custom_name || project.name;
+
+  const handleInit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await invokeCommand("run_in_terminal", { command: "claude init", cwd: project.path });
+    } catch (err) {
+      console.error("Failed to run claude init:", err);
+    }
+    onRefresh?.();
+  };
 
   return (
     <Card
@@ -96,13 +109,23 @@ export function ProjectCard({
             )}
           </div>
         )}
-        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <MessageSquare className="h-3 w-3" />
-            {t("projects.sessionCount", { count: project.session_count })}
-          </span>
-          {project.last_active && <span>{project.last_active}</span>}
-        </div>
+        {!project.initialized ? (
+          <button
+            className="mt-2 flex items-center gap-1.5 text-xs text-amber-500 hover:text-amber-600 transition-colors"
+            onClick={handleInit}
+          >
+            <AlertCircle className="h-3 w-3" />
+            {t("projects.notInitialized")}
+          </button>
+        ) : (
+          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              {t("projects.sessionCount", { count: project.session_count })}
+            </span>
+            {project.last_active && <span>{project.last_active}</span>}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -205,6 +205,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
               onCheck={() => handleCheck(project.encoded_name)}
               mergedCount={getMergedCount(project.encoded_name)}
               onTagClick={(tag) => setSelectedTag(selectedTag === tag ? null : tag)}
+              onRefresh={() => { refetch(); refetchMerges(); }}
             />
           ))}
         </div>

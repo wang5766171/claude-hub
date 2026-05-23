@@ -14,6 +14,8 @@ pub struct Project {
     pub session_count: usize,
     pub last_active: Option<String>,
     pub has_claude_md: bool,
+    #[serde(default)]
+    pub initialized: bool,
 }
 
 pub fn scan_projects() -> Vec<Project> {
@@ -22,18 +24,38 @@ pub fn scan_projects() -> Vec<Project> {
         None => return Vec::new(),
     };
     let projects_dir = home.join(".claude").join("projects");
-    if !projects_dir.exists() {
-        return Vec::new();
-    }
 
     let mut projects = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-        for entry in entries.flatten() {
-            let encoded_name = entry.file_name().to_string_lossy().to_string();
-            if crate::hub::is_project_hidden(&encoded_name).unwrap_or(false) {
+    let mut seen_encoded = std::collections::HashSet::new();
+
+    // Scan Claude Code projects
+    if projects_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                let encoded_name = entry.file_name().to_string_lossy().to_string();
+                if crate::hub::is_project_hidden(&encoded_name).unwrap_or(false) {
+                    continue;
+                }
+                if let Some(project) = parse_project(&projects_dir, &encoded_name) {
+                    seen_encoded.insert(project.encoded_name.clone());
+                    projects.push(project);
+                }
+            }
+        }
+    }
+
+    // Add manual projects
+    if let Ok(manual_paths) = crate::hub::load_manual_projects() {
+        for path in &manual_paths {
+            let encoded = encode_project_path(path);
+            if seen_encoded.contains(&encoded) {
                 continue;
             }
-            if let Some(project) = parse_project(&projects_dir, &encoded_name) {
+            if crate::hub::is_project_hidden(&encoded).unwrap_or(false) {
+                continue;
+            }
+            if let Some(project) = build_project_from_path(path) {
+                seen_encoded.insert(project.encoded_name.clone());
                 projects.push(project);
             }
         }
@@ -61,6 +83,43 @@ pub fn scan_projects() -> Vec<Project> {
     projects
 }
 
+/// Build a Project from a filesystem path (for manually added projects)
+fn build_project_from_path(path: &str) -> Option<Project> {
+    let project_path = std::path::Path::new(path);
+    if !project_path.is_dir() {
+        return None;
+    }
+
+    let name = project_path.file_name()?.to_string_lossy().to_string();
+    let encoded = encode_project_path(path);
+
+    let home = dirs::home_dir()?;
+    let claude_project_dir = home.join(".claude").join("projects").join(&encoded);
+    let initialized = claude_project_dir.is_dir();
+
+    let session_count = if initialized {
+        count_sessions(&claude_project_dir)
+    } else {
+        0
+    };
+
+    let last_active = if initialized {
+        get_last_active(&claude_project_dir)
+    } else {
+        None
+    };
+
+    Some(Project {
+        name,
+        path: project_path.to_path_buf(),
+        encoded_name: encoded,
+        session_count,
+        last_active,
+        has_claude_md: project_path.join(".claude").join("CLAUDE.md").exists(),
+        initialized,
+    })
+}
+
 fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
     let project_dir = projects_dir.join(encoded_name);
     if !project_dir.is_dir() {
@@ -77,6 +136,8 @@ fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
     let session_count = count_sessions(&project_dir);
     let last_active = get_last_active(&project_dir);
     let has_claude_md = Path::new(&decoded_path).join(".claude").join("CLAUDE.md").exists();
+    // A project is "initialized" if it has a record in ~/.claude/projects/
+    let initialized = project_dir.is_dir();
 
     Some(Project {
         name,
@@ -85,6 +146,7 @@ fn parse_project(projects_dir: &Path, encoded_name: &str) -> Option<Project> {
         session_count,
         last_active,
         has_claude_md,
+        initialized,
     })
 }
 
@@ -189,36 +251,18 @@ pub fn get_level1_dir(path: &str) -> Option<String> {
 
 pub fn add_project(path: &str) -> Option<Project> {
     let project_path = Path::new(path);
-    if !project_path.join(".claude").exists() {
+    if !project_path.is_dir() {
         return None;
     }
 
-    let name = project_path.file_name()?.to_string_lossy().to_string();
     let encoded = encode_project_path(path);
 
-    let home = dirs::home_dir()?;
-    let claude_project_dir = home.join(".claude").join("projects").join(&encoded);
+    // Unhide if previously removed
+    let _ = crate::hub::unhide_project(&encoded);
+    // Persist as manual project
+    let _ = crate::hub::add_manual_project(path);
 
-    let session_count = if claude_project_dir.exists() {
-        count_sessions(&claude_project_dir)
-    } else {
-        0
-    };
-
-    let last_active = if claude_project_dir.exists() {
-        get_last_active(&claude_project_dir)
-    } else {
-        None
-    };
-
-    Some(Project {
-        name,
-        path: project_path.to_path_buf(),
-        encoded_name: encoded,
-        session_count,
-        last_active,
-        has_claude_md: project_path.join(".claude").join("CLAUDE.md").exists(),
-    })
+    build_project_from_path(path)
 }
 
 fn count_sessions(dir: &Path) -> usize {
