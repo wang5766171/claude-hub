@@ -1,7 +1,7 @@
 {
   "name": "claude-hub",
   "private": false,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A desktop GUI for managing Claude Code projects, sessions, and configuration",
   "license": "MIT",
   "repository": {
