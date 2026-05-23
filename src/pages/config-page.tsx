@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { ConfigForm } from "@/components/config/config-form";
-import { PresetManager } from "@/components/config/preset-manager";
+import { TemplateManager } from "@/components/config/template-manager";
 import { BackupManager } from "@/components/config/backup-manager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import type { ClaudeConfig } from "@/types";
 export function ConfigPage() {
   const { t } = useTranslation();
   const { data: config, loading, refetch } = useInvoke<ClaudeConfig>("load_config");
-  const [activeTab, setActiveTab] = useState<"edit" | "presets" | "backups">("edit");
+  const [activeTab, setActiveTab] = useState<"edit" | "templates" | "backups">("edit");
 
   const handleConfigSaved = useCallback(() => {
     refetch();
@@ -58,7 +58,7 @@ export function ConfigPage() {
 
   const tabs = [
     { key: "edit" as const, label: t("config.editConfig") },
-    { key: "presets" as const, label: t("config.presets") },
+    { key: "templates" as const, label: t("config.templates") },
     { key: "backups" as const, label: t("config.backups") },
   ];
 
@@ -100,8 +100,8 @@ export function ConfigPage() {
         {activeTab === "edit" && (
           <ConfigForm config={config} onSaved={handleConfigSaved} />
         )}
-        {activeTab === "presets" && (
-          <PresetManager onApplied={refetch} />
+        {activeTab === "templates" && (
+          <TemplateManager onApplied={refetch} />
         )}
         {activeTab === "backups" && (
           <BackupManager onRestored={refetch} />

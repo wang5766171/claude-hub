@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Save, Plus, Trash2 } from "lucide-react";
-import type { ClaudeConfig, ConfigTemplate } from "@/types";
+import type { ClaudeConfig } from "@/types";
 import { SectionHelp } from "./section-help";
 
 const MODEL_OPTIONS = [
@@ -45,8 +45,6 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
   const { t } = useTranslation();
   const [config, setConfig] = useState<ClaudeConfig>(initialConfig);
   const [saving, setSaving] = useState(false);
-  const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   // List pattern inputs
   const [newAllowPattern, setNewAllowPattern] = useState("");
@@ -54,19 +52,6 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
 
   // Env var input
   const [newEnvKey, setNewEnvKey] = useState("");
-
-  useEffect(() => {
-    invokeCommand<ConfigTemplate[]>("list_config_templates")
-      .then(setTemplates)
-      .catch(console.error);
-  }, []);
-
-  const handleApplyTemplate = (templateId: string) => {
-    const template = templates.find((t) => t.id === templateId);
-    if (!template) return;
-    setConfig(template.config);
-    setSelectedTemplate(templateId);
-  };
 
   // --- Field handlers ---
 
@@ -205,7 +190,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky header: title + save + template */}
+      {/* Sticky header: title + save */}
       <div className="sticky top-0 z-10 bg-background pb-3 border-b border-border mb-3">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t("config.configuration")}</h3>
@@ -213,32 +198,6 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
             <Save className="h-4 w-4" />
             {saving ? t("common.saving") : t("common.save")}
           </Button>
-        </div>
-
-        <div className="mt-3 space-y-2">
-          <Label>{t("config.templateTitle")}</Label>
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">{t("config.templateSelect")}</option>
-              {templates.map((tpl) => (
-                <option key={tpl.id} value={tpl.id}>
-                  {tpl.name} - {tpl.description}
-                </option>
-              ))}
-            </select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleApplyTemplate(selectedTemplate)}
-              disabled={!selectedTemplate}
-            >
-              {t("config.templateApply")}
-            </Button>
-          </div>
         </div>
       </div>
 

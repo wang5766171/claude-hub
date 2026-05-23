@@ -120,6 +120,7 @@ export interface ConfigTemplate {
 export interface Preset {
   id: string;
   name: string;
+  description?: string;
   config: ClaudeConfig;
   createdAt: string;
 }
