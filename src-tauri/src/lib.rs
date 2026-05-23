@@ -1,3 +1,4 @@
+mod agent;
 mod project;
 mod config;
 mod session;
@@ -9,16 +10,29 @@ mod chat;
 mod image;
 
 use std::collections::HashMap;
+use std::sync::Mutex;
 use tauri::Manager;
 
-#[tauri::command]
-fn scan_projects() -> Vec<project::Project> {
-    project::scan_projects()
+pub struct AppState {
+    pub registry: agent::AgentRegistry,
 }
 
 #[tauri::command]
-fn add_project(path: String) -> Result<project::Project, String> {
-    project::add_project(&path).ok_or_else(|| format!("No .claude directory found at: {}", path))
+fn list_agents(state: tauri::State<'_, Mutex<AppState>>) -> Vec<agent::AgentInfo> {
+    let s = state.lock().unwrap();
+    s.registry.list_agents()
+}
+
+#[tauri::command]
+fn scan_projects(state: tauri::State<'_, Mutex<AppState>>) -> Vec<project::Project> {
+    let s = state.lock().unwrap();
+    s.registry.active().scan_projects()
+}
+
+#[tauri::command]
+fn add_project(state: tauri::State<'_, Mutex<AppState>>, path: String) -> Result<project::Project, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().add_project(&path).ok_or_else(|| format!("No .claude directory found at: {}", path))
 }
 
 #[tauri::command]
@@ -27,43 +41,15 @@ fn remove_project(encoded_name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn list_sessions(encoded_name: String) -> Result<Vec<session::Session>, String> {
-    let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-    let projects_dir = home.join(".claude").join("projects");
-    let project_dir = projects_dir.join(&encoded_name);
-    if !project_dir.exists() {
-        return Err(format!("Project directory not found: {}", encoded_name));
-    }
-
-    let mut all_sessions = session::list_sessions(&project_dir);
-
-    // Also load sessions from merged secondaries
-    if let Ok(secondaries) = hub::get_merged_secondaries(&encoded_name) {
-        for sec in secondaries {
-            let sec_dir = projects_dir.join(&sec);
-            if sec_dir.exists() {
-                let mut sec_sessions = session::list_sessions(&sec_dir);
-                all_sessions.append(&mut sec_sessions);
-            }
-        }
-    }
-
-    // Sort all by started_at (most recent first)
-    all_sessions.sort_by(|a, b| b.started_at.cmp(&a.started_at));
-
-    Ok(all_sessions)
+fn list_sessions(state: tauri::State<'_, Mutex<AppState>>, encoded_name: String) -> Result<Vec<session::Session>, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().list_sessions(&encoded_name)
 }
 
 #[tauri::command]
-fn get_session_messages(session_id: String, encoded_name: String) -> Result<Vec<session::Message>, String> {
-    let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-    let session_path = home.join(".claude").join("projects").join(&encoded_name).join(format!("{}.jsonl", session_id));
-    if !session_path.exists() {
-        return Err(format!("Session file not found: {}", session_id));
-    }
-    session::load_session(&session_path)
-        .map(|s| s.messages)
-        .ok_or_else(|| format!("Failed to parse session: {}", session_id))
+fn get_session_messages(state: tauri::State<'_, Mutex<AppState>>, session_id: String, encoded_name: String) -> Result<Vec<session::Message>, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().get_session_messages(&session_id, &encoded_name)
 }
 
 #[tauri::command]
@@ -82,18 +68,21 @@ fn delete_session_name(session_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn load_config() -> Result<config::ClaudeConfig, String> {
-    config::load_config().map_err(|e| e.to_string())
+fn load_config(state: tauri::State<'_, Mutex<AppState>>) -> Result<config::ClaudeConfig, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().load_config()
 }
 
 #[tauri::command]
-fn load_history() -> Vec<history::HistoryEntry> {
-    history::load_history()
+fn load_history(state: tauri::State<'_, Mutex<AppState>>) -> Vec<history::HistoryEntry> {
+    let s = state.lock().unwrap();
+    s.registry.active().load_history()
 }
 
 #[tauri::command]
-fn save_config(config: config::ClaudeConfig) -> Result<(), String> {
-    config::save_config(&config).map_err(|e| e.to_string())
+fn save_config(state: tauri::State<'_, Mutex<AppState>>, config: config::ClaudeConfig) -> Result<(), String> {
+    let s = state.lock().unwrap();
+    s.registry.active().save_config(&config)
 }
 
 #[tauri::command]
@@ -119,23 +108,27 @@ fn apply_preset(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn list_backups() -> Result<Vec<config::BackupEntry>, String> {
-    config::list_backups().map_err(|e| e.to_string())
+fn list_backups(state: tauri::State<'_, Mutex<AppState>>) -> Result<Vec<config::BackupEntry>, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().list_backups()
 }
 
 #[tauri::command]
-fn restore_backup(backup_path: String) -> Result<(), String> {
-    config::restore_backup(&backup_path).map_err(|e| e.to_string())
+fn restore_backup(state: tauri::State<'_, Mutex<AppState>>, backup_path: String) -> Result<(), String> {
+    let s = state.lock().unwrap();
+    s.registry.active().restore_backup(&backup_path)
 }
 
 #[tauri::command]
-fn export_config(path: String) -> Result<(), String> {
-    config::export_config(&path).map_err(|e| e.to_string())
+fn export_config(state: tauri::State<'_, Mutex<AppState>>, path: String) -> Result<(), String> {
+    let s = state.lock().unwrap();
+    s.registry.active().export_config(&path)
 }
 
 #[tauri::command]
-fn import_config(path: String) -> Result<config::ClaudeConfig, String> {
-    config::import_config(&path).map_err(|e| e.to_string())
+fn import_config(state: tauri::State<'_, Mutex<AppState>>, path: String) -> Result<config::ClaudeConfig, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().import_config(&path)
 }
 
 #[tauri::command]
@@ -207,33 +200,38 @@ fn cleanup_dead_sessions() -> Result<u32, String> {
 }
 
 #[tauri::command]
-fn run_in_terminal(command: String, cwd: Option<String>) -> Result<bool, String> {
-    command::run_in_terminal(&command, cwd.as_deref()).map_err(|e| e.to_string())
+fn run_in_terminal(command_str: String, cwd: Option<String>) -> Result<bool, String> {
+    command::run_in_terminal(&command_str, cwd.as_deref()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn load_project_settings(project_path: String) -> Result<project_config::ProjectSettings, String> {
-    project_config::load_project_settings(&project_path).map_err(|e| e.to_string())
+fn load_project_settings(state: tauri::State<'_, Mutex<AppState>>, project_path: String) -> Result<project_config::ProjectSettings, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().load_project_settings(&project_path)
 }
 
 #[tauri::command]
-fn load_project_settings_local(project_path: String) -> Result<project_config::ProjectSettings, String> {
-    project_config::load_project_settings_local(&project_path).map_err(|e| e.to_string())
+fn load_project_settings_local(state: tauri::State<'_, Mutex<AppState>>, project_path: String) -> Result<project_config::ProjectSettings, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().load_project_settings_local(&project_path)
 }
 
 #[tauri::command]
-fn save_project_settings(project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
-    project_config::save_project_settings(&project_path, &settings).map_err(|e| e.to_string())
+fn save_project_settings(state: tauri::State<'_, Mutex<AppState>>, project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
+    let s = state.lock().unwrap();
+    s.registry.active().save_project_settings(&project_path, &settings)
 }
 
 #[tauri::command]
-fn save_project_settings_local(project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
-    project_config::save_project_settings_local(&project_path, &settings).map_err(|e| e.to_string())
+fn save_project_settings_local(state: tauri::State<'_, Mutex<AppState>>, project_path: String, settings: project_config::ProjectSettings) -> Result<(), String> {
+    let s = state.lock().unwrap();
+    s.registry.active().save_project_settings_local(&project_path, &settings)
 }
 
 #[tauri::command]
-fn load_claude_md(project_path: String) -> Result<Option<String>, String> {
-    project_config::load_claude_md(&project_path).map_err(|e| e.to_string())
+fn load_claude_md(state: tauri::State<'_, Mutex<AppState>>, project_path: String) -> Result<Option<String>, String> {
+    let s = state.lock().unwrap();
+    s.registry.active().load_claude_md(&project_path)
 }
 
 #[tauri::command]
@@ -247,14 +245,16 @@ fn save_project_meta(encoded_name: String, meta: hub::ProjectMeta) -> Result<(),
 }
 
 #[tauri::command]
-fn get_level1_dir_cmd(encoded_name: String) -> Result<Option<String>, String> {
-    let decoded = project::decode_project_path(&encoded_name);
-    Ok(project::get_level1_dir(&decoded))
+fn get_level1_dir_cmd(state: tauri::State<'_, Mutex<AppState>>, encoded_name: String) -> Result<Option<String>, String> {
+    let s = state.lock().unwrap();
+    let decoded = s.registry.active().decode_project_path(&encoded_name);
+    Ok(s.registry.active().get_level1_dir(&decoded))
 }
 
 #[tauri::command]
-fn get_mergeable_projects(encoded_name: String) -> Result<Vec<String>, String> {
-    let projects = project::scan_projects();
+fn get_mergeable_projects(state: tauri::State<'_, Mutex<AppState>>, encoded_name: String) -> Result<Vec<String>, String> {
+    let s = state.lock().unwrap();
+    let projects = s.registry.active().scan_projects();
     let mergeable: Vec<String> = projects.iter()
         .filter(|p| p.encoded_name != encoded_name)
         .map(|p| p.encoded_name.clone())
@@ -273,7 +273,7 @@ fn split_project(primary: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_project_merges() -> Result<std::collections::HashMap<String, Vec<String>>, String> {
+fn get_project_merges() -> Result<HashMap<String, Vec<String>>, String> {
     let merges = hub::load_project_merges().map_err(|e| e.to_string())?;
     Ok(merges.merges)
 }
@@ -284,8 +284,9 @@ fn get_merged_secondaries(primary: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn list_config_templates() -> Result<Vec<hub::ConfigTemplate>, String> {
-    Ok(hub::list_config_templates())
+fn list_config_templates(state: tauri::State<'_, Mutex<AppState>>) -> Vec<hub::ConfigTemplate> {
+    let s = state.lock().unwrap();
+    s.registry.active().config_templates()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -293,6 +294,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            let registry = agent::AgentRegistry::new();
+            app.manage(Mutex::new(AppState { registry }));
             app.manage(std::sync::Mutex::new(chat::ChatState::new()));
             if let Ok(pinned) = hub::load_always_on_top() {
                 if pinned {
@@ -304,6 +307,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            list_agents,
             scan_projects,
             add_project,
             remove_project,
