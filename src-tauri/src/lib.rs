@@ -192,8 +192,13 @@ fn register_terminal_session(session_id: String, pid: u32, project_path: String)
 }
 
 #[tauri::command]
-fn get_terminal_session(session_id: String) -> Result<Option<hub::TerminalSessionInfo>, String> {
-    hub::get_terminal_session(&session_id).map_err(|e| e.to_string())
+fn find_session_terminal(session_id: String) -> Result<Option<hub::TerminalSessionInfo>, String> {
+    hub::find_session_terminal(&session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn focus_session_terminal(session_id: String) -> Result<bool, String> {
+    hub::focus_session_terminal(&session_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -334,7 +339,8 @@ pub fn run() {
             delete_custom_command,
             open_in_terminal,
             register_terminal_session,
-            get_terminal_session,
+            find_session_terminal,
+            focus_session_terminal,
             cleanup_dead_sessions,
             execute_command,
             load_project_settings,

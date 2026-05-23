@@ -119,10 +119,11 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
   const handleResumeSession = async (sessionId: string, _sessionPath: string) => {
     setLoadingSessionId(sessionId);
     try {
-      // Check if terminal is already open
-      const existing = await invokeCommand<{ pid: number; project_path: string; started_at: string } | null>("get_terminal_session", { sessionId });
+      // Check if terminal is already open by searching process command lines
+      const existing = await invokeCommand<{ pid: number; project_path: string; started_at: string } | null>("find_session_terminal", { sessionId });
       if (existing) {
-        // Terminal already open — clear loading
+        // Terminal already open — try to focus its window
+        try { await invokeCommand<boolean>("focus_session_terminal", { sessionId }); } catch {}
         setLoadingSessionId(null);
         return;
       }

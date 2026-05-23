@@ -94,7 +94,12 @@ pub fn open_in_terminal(project_path: &str, resume_session_id: Option<&str>) -> 
 
         if has_wt {
             // Spawn wt directly — avoids nested quoting issues with cmd /C
-            let child = std::process::Command::new("wt")
+            let mut cmd = std::process::Command::new("wt");
+            // Named window per session so we can focus the correct one later
+            if let Some(id) = resume_session_id {
+                cmd.args(["-w", &format!("claude-{}", id)]);
+            }
+            let child = cmd
                 .args(["-d", project_path])
                 .args(["--", "cmd", "/K", &claude_cmd])
                 .spawn()?;

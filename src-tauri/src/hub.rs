@@ -364,45 +364,94 @@ pub fn register_terminal_session(
     write_json(&path, &sessions)
 }
 
-pub fn get_terminal_session(session_id: &str) -> Result<Option<TerminalSessionInfo>, Box<dyn std::error::Error>> {
-    let path = terminal_sessions_path()?;
-    let mut sessions: TerminalSessions = if path.exists() {
-        read_json(&path)?
-    } else {
-        TerminalSessions::default()
-    };
-    if let Some(info) = sessions.sessions.get(session_id).cloned() {
-        if is_process_alive(info.pid) {
-            Ok(Some(info))
+/// Find a running terminal for the given session by searching process command lines.
+/// More reliable than PID tracking because wt.exe may delegate to existing WindowsTerminal.exe
+/// and the spawned PID dies immediately.
+pub fn find_session_terminal(session_id: &str) -> Result<Option<TerminalSessionInfo>, Box<dyn std::error::Error>> {
+    if let Some(pid) = find_process_by_resume(session_id)? {
+        let path = terminal_sessions_path()?;
+        let mut sessions: TerminalSessions = if path.exists() {
+            read_json(&path)?
         } else {
-            sessions.sessions.remove(session_id);
-            write_json(&path, &sessions)?;
-            Ok(None)
-        }
+            TerminalSessions::default()
+        };
+        let info = TerminalSessionInfo {
+            pid,
+            project_path: sessions.sessions.get(session_id)
+                .map(|s| s.project_path.clone())
+                .unwrap_or_default(),
+            started_at: sessions.sessions.get(session_id)
+                .map(|s| s.started_at.clone())
+                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
+        };
+        sessions.sessions.insert(session_id.to_string(), info.clone());
+        write_json(&path, &sessions)?;
+        Ok(Some(info))
     } else {
+        let path = terminal_sessions_path()?;
+        if path.exists() {
+            let mut sessions: TerminalSessions = read_json(&path)?;
+            if sessions.sessions.remove(session_id).is_some() {
+                write_json(&path, &sessions)?;
+            }
+        }
         Ok(None)
     }
 }
 
-fn is_process_alive(pid: u32) -> bool {
+/// Focus the Windows Terminal window for a given session using its named window.
+pub fn focus_session_terminal(session_id: &str) -> Result<bool, Box<dyn std::error::Error>> {
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("tasklist")
-            .args(["/FI", &format!("PID eq {}", pid), "/NH"])
-            .output()
-            .map(|o| {
-                let out = String::from_utf8_lossy(&o.stdout);
-                out.contains(&pid.to_string())
-            })
-            .unwrap_or(false)
+        let window_name = format!("claude-{}", session_id);
+        let output = std::process::Command::new("wt")
+            .args(["-w", &window_name, "focus-tab"])
+            .output()?;
+        Ok(output.status.success())
     }
     #[cfg(not(target_os = "windows"))]
     {
-        std::process::Command::new("kill")
-            .args(["-0", &pid.to_string()])
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
+        let _ = session_id;
+        Ok(false)
+    }
+}
+
+fn find_process_by_resume(session_id: &str) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("powershell")
+            .args([
+                "-NoProfile", "-NonInteractive", "-Command",
+                &format!(
+                    "$p = Get-CimInstance Win32_Process -Filter 'CommandLine LIKE ''%%--resume {}%%''' | Where-Object {{ $_.Name -ne 'powershell.exe' -and $_.Name -ne 'bash.exe' }}; if ($p) {{ ($p | Select-Object -First 1).ProcessId }}",
+                    session_id
+                ),
+            ])
+            .output()?;
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !stdout.is_empty() {
+                if let Ok(pid) = stdout.lines().next().unwrap_or("").trim().parse::<u32>() {
+                    return Ok(Some(pid));
+                }
+            }
+        }
+        Ok(None)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let output = std::process::Command::new("pgrep")
+            .args(["-f", &format!("--resume {}", session_id)])
+            .output()?;
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if let Some(pid_str) = stdout.lines().next() {
+                if let Ok(pid) = pid_str.trim().parse::<u32>() {
+                    return Ok(Some(pid));
+                }
+            }
+        }
+        Ok(None)
     }
 }
 
@@ -414,7 +463,9 @@ pub fn cleanup_dead_sessions() -> Result<u32, Box<dyn std::error::Error>> {
         TerminalSessions::default()
     };
     let before = sessions.sessions.len();
-    sessions.sessions.retain(|_, info| is_process_alive(info.pid));
+    sessions.sessions.retain(|session_id, _info| {
+        find_process_by_resume(session_id).map(|r| r.is_some()).unwrap_or(false)
+    });
     let removed = (before - sessions.sessions.len()) as u32;
     write_json(&path, &sessions)?;
     Ok(removed)
