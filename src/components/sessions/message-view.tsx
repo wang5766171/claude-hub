@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useDeferredValue } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, ArrowUp, RotateCw, Copy, Check } from "lucide-react";
+import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, ArrowUp, RotateCw, Copy, Check, X } from "lucide-react";
 import type { Message, ContentBlock } from "@/types";
 import { InlineImages, stripImagePrompt } from "./inline-image";
 
@@ -246,14 +246,15 @@ function renderBlock(block: ContentBlock, query: string, dark?: boolean, matchOf
 export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: MessageViewProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || "");
+  const renderingQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
-    if (initialSearchQuery) setSearchQuery(initialSearchQuery);
+    setSearchQuery(initialSearchQuery || "");
   }, [initialSearchQuery]);
 
   const searchState = useMemo(() => {
-    if (!searchQuery.trim()) return { total: 0, offsets: new Map<string, number>() };
-    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!renderingQuery.trim()) return { total: 0, offsets: new Map<string, number>() };
+    const escaped = renderingQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(escaped, "gi");
     const offsets = new Map<string, number>();
     let total = 0;
@@ -266,12 +267,39 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
       });
     });
     return { total, offsets };
-  }, [messages, searchQuery]);
+  }, [messages, renderingQuery]);
 
   const [currentOcc, setCurrentOcc] = useState(0);
-  useEffect(() => { setCurrentOcc(0); }, [searchQuery]);
-
+  const autoScrollRef = useRef(false);
   const userNavigated = useRef(false);
+
+  // When search query changes, find nearest match to viewport center and auto-scroll
+  useEffect(() => {
+    if (!renderingQuery.trim() || searchState.total === 0) {
+      setCurrentOcc(0);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const marks = document.querySelectorAll('[data-match-idx]');
+      if (marks.length === 0) return;
+      const viewportCenter = window.innerHeight / 2;
+      let nearestIdx = 0;
+      let nearestDist = Infinity;
+      marks.forEach((el) => {
+        const idx = parseInt(el.getAttribute('data-match-idx') || '0');
+        const rect = el.getBoundingClientRect();
+        const center = rect.top + rect.height / 2;
+        const dist = Math.abs(center - viewportCenter);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIdx = idx;
+        }
+      });
+      setCurrentOcc(nearestIdx);
+      autoScrollRef.current = true;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [renderingQuery, searchState.total]);
 
   const navigateMatch = (dir: 1 | -1) => {
     if (searchState.total === 0) return;
@@ -280,14 +308,14 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
   };
 
   useEffect(() => {
-    if (userNavigated.current) {
-      const timer = setTimeout(() => {
-        const el = document.querySelector(`[data-match-idx="${currentOcc}"]`);
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 50);
-      userNavigated.current = false;
-      return () => clearTimeout(timer);
-    }
+    if (!autoScrollRef.current && !userNavigated.current) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-match-idx="${currentOcc}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    autoScrollRef.current = false;
+    userNavigated.current = false;
+    return () => clearTimeout(timer);
   }, [currentOcc]);
 
   const messageList = (
@@ -326,7 +354,7 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
                 {isUser && <InlineImages text={extractMessageText(msg)} />}
                 {msg.content.map((block, j) => (
                   <div key={j} className="overflow-hidden">
-                    {renderBlock(block, searchQuery, isUser, searchState.offsets.get(`${i}-${j}`) ?? 0, currentOcc)}
+                    {renderBlock(block, renderingQuery, isUser, searchState.offsets.get(`${i}-${j}`) ?? 0, currentOcc)}
                   </div>
                 ))}
               </div>
@@ -356,8 +384,16 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("sessions.search")}
-              className="h-8 pl-8 text-sm"
+              className="h-8 pl-8 pr-7 text-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
           {searchState.total > 0 && (
             <div className="flex items-center gap-0">
@@ -380,7 +416,7 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
               </Button>
             </div>
           )}
-          {searchQuery && searchState.total === 0 && (
+          {renderingQuery && searchState.total === 0 && (
             <span className="text-xs text-muted-foreground">{t("sessions.noResults")}</span>
           )}
           {onRefresh && (
@@ -404,8 +440,16 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("sessions.search")}
-            className="h-8 pl-8 text-sm"
+            className="h-8 pl-8 pr-7 text-sm"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
         {searchState.total > 0 && (
           <div className="flex items-center gap-0">

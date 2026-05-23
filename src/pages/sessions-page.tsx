@@ -8,7 +8,7 @@ import { StreamingMessage } from "@/components/sessions/streaming-message";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { MessageSquare, Pencil, Search, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { searchSessions } from "@/lib/session-search";
@@ -302,10 +302,22 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
                       onChange={(e) => {
                         setGlobalSearchQuery(e.target.value);
                         setActiveSearchQuery(e.target.value);
+                        setMsgSearchSeed(e.target.value);
                       }}
                       placeholder={t("sessions.searchAll")}
-                      className="h-8 pl-8 text-sm"
+                      className="h-8 pl-8 pr-7 text-sm"
                     />
+                    {globalSearchQuery && (
+                      <button
+                        onClick={() => {
+                          setGlobalSearchQuery("");
+                          setActiveSearchQuery("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
