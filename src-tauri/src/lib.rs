@@ -354,6 +354,7 @@ pub fn run() {
             chat::send_message,
             chat::abort_chat,
             image::save_session_images,
+            image::read_image_as_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

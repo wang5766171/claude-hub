@@ -108,7 +108,7 @@ export function ChatInput({
 
     setSending(true);
     try {
-      let savedImagePaths: string[] | undefined;
+      let fullMessage = message.trim();
 
       if (images.length > 0) {
         const inputImages = images.map((img) => ({
@@ -120,23 +120,27 @@ export function ChatInput({
           projectPath,
           images: inputImages,
         });
-        savedImagePaths = saved.map((s) => s.path);
+        const batchId = saved[0]?.batch_id ?? "unknown";
+        const imageLines = saved
+          .map((s) => `${s.label}（批次 ${s.batch_id}）: ${s.path}`)
+          .join("\n");
+        if (!fullMessage) {
+          fullMessage = t("projects.defaultImageMessage");
+        }
+        fullMessage += `\n\n<!--CLAUDE_HUB_IMAGES_BEGIN-->\n[用户在本次对话中上传了以下图片（批次 ${batchId}），请使用 Read 工具查看对应的文件路径：]\n${imageLines}\n<!--CLAUDE_HUB_IMAGES_END-->`;
       }
-
-      const finalMessage = message.trim() || t("projects.defaultImageMessage");
 
       const chatSession = await invokeCommand<{ session_id: string; process_id: number }>(
         "send_message",
         {
           projectPath,
           sessionId: sessionId,
-          message: finalMessage,
-          imagePaths: savedImagePaths,
+          message: fullMessage,
         }
       );
 
       setActiveSessionId(chatSession.session_id);
-      if (onMessageSent) onMessageSent(chatSession.session_id, finalMessage);
+      if (onMessageSent) onMessageSent(chatSession.session_id, fullMessage);
 
       // Listen for result to clear our own sending state
       // Stream display is handled by sessions-page's global listener

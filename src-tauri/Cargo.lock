@@ -435,7 +435,7 @@ dependencies = [
 
 [[package]]
 name = "claude-hub"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",

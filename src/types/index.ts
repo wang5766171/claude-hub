@@ -194,4 +194,5 @@ export interface SavedImage {
   path: string;
   label: string;
   index: number;
+  batch_id: string;
 }
