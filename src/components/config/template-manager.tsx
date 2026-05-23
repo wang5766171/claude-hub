@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Sparkles, User, FileJson, Pencil, Eye } from "lucide-react";
-import type { Preset, ConfigTemplate, ClaudeConfig } from "@/types";
+import type { Preset, ConfigTemplate, ClaudeConfig, SandboxConfig } from "@/types";
 
 interface TemplateManagerProps {
   onApplied: () => void;
@@ -57,12 +57,14 @@ function extractConfigItems(config: ClaudeConfig, t: (k: string) => string): { l
 
   const allow = config.permissions?.allow;
   if (allow && allow.length > 0) {
-    items.push({ label: t("config.allowCount", { count: allow.length }), value: allow.join(", ") });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items.push({ label: (t as any)("config.allowCount", { count: allow.length }), value: allow.join(", ") });
   }
 
   const deny = config.permissions?.deny;
   if (deny && deny.length > 0) {
-    items.push({ label: t("config.denyCount", { count: deny.length }), value: deny.join(", ") });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items.push({ label: (t as any)("config.denyCount", { count: deny.length }), value: deny.join(", ") });
   }
 
   if (config.sandbox?.enabled) {
@@ -442,7 +444,7 @@ function NewTemplateDialog({ open, onOpenChange, onSave }: {
                   value={formConfig.permissions?.defaultMode ?? ""}
                   onChange={(e) => setFormConfig({
                     ...formConfig,
-                    permissions: { ...formConfig.permissions, defaultMode: e.target.value || undefined, allow: formConfig.permissions?.allow, deny: formConfig.permissions?.deny, additionalDirectories: undefined },
+                    permissions: { ...formConfig.permissions, defaultMode: e.target.value || null, allow: formConfig.permissions?.allow ?? null, deny: formConfig.permissions?.deny ?? null, additionalDirectories: null },
                   })}
                   className={selectClass}
                 >
@@ -457,7 +459,7 @@ function NewTemplateDialog({ open, onOpenChange, onSave }: {
                   <Label className="text-xs">{t("config.sandboxLabel")}</Label>
                   <select
                     value={formConfig.sandbox?.enabled ? "true" : "false"}
-                    onChange={(e) => setFormConfig({ ...formConfig, sandbox: { ...formConfig.sandbox, enabled: e.target.value === "true" } })}
+                    onChange={(e) => setFormConfig({ ...formConfig, sandbox: { enabled: e.target.value === "true", allowCommand: null, denyCommand: null, allowPath: null, denyPath: null, network: null, profile: null } satisfies SandboxConfig })}
                     className={selectClass}
                   >
                     <option value="false">{t("common.default")}</option>

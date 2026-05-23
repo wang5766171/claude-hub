@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { User, Bot, Wrench, ChevronRight, Copy, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { StreamChunk } from "@/types";
 import { InlineImages, stripImagePrompt } from "./inline-image";
 

@@ -74,7 +74,7 @@ function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "t
               ? "border-blue-300/30 text-blue-100 bg-black/10"
               : "border-blue-200 text-blue-800 bg-blue-50/50"
           )}>
-            {query ? highlightText(inputStr, query) : inputStr}
+            {query ? highlightText(inputStr, query, 0, -1) : inputStr}
           </pre>
         )}
       </div>
@@ -83,12 +83,10 @@ function ToolUseBlock({ block, query, dark }: { block: ContentBlock & { type: "t
 }
 
 function ToolResultBlock({ block, query, dark }: { block: ContentBlock & { type: "tool_result" }; query: string; dark?: boolean }) {
-  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const contentStr = typeof block.content === "string"
     ? block.content
     : JSON.stringify(block.content, null, 2);
-  const truncated = contentStr.length > 500;
   const displayText = expanded ? contentStr : contentStr.slice(0, 500);
 
   return (
@@ -113,7 +111,7 @@ function ToolResultBlock({ block, query, dark }: { block: ContentBlock & { type:
             "px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all max-h-64 overflow-auto",
             dark ? "text-amber-100" : "text-amber-800"
           )}>
-            {query ? highlightText(displayText, query) : displayText}
+            {query ? highlightText(displayText, query, 0, -1) : displayText}
           </pre>
         )}
       </div>

@@ -176,7 +176,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
   const sectionHasContent: Record<SectionId, boolean> = {
     env: !!config.env && Object.keys(config.env).length > 0,
     plugins: !!config.enabledPlugins && Object.keys(config.enabledPlugins).length > 0,
-    permissions: !!(config.permissions?.defaultMode || (config.permissions?.allow?.length) || (config.permissions?.deny?.length) || config.permissions?.sandbox?.enabled || config.skipDangerousModePermissionPrompt),
+    permissions: !!(config.permissions?.defaultMode || (config.permissions?.allow?.length) || (config.permissions?.deny?.length) || config.sandbox?.enabled || config.skipDangerousModePermissionPrompt),
     model: !!(config.model || config.smallModel || config.largeModel || config.apiProvider),
     advanced: !!(config.verbose || config.maxTurns),
   };
