@@ -63,7 +63,7 @@ export function ConfigPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6 h-full overflow-auto">
+    <div className="flex flex-col h-full p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t("config.title")}</h2>
         <div className="flex gap-2">
@@ -95,16 +95,18 @@ export function ConfigPage() {
         ))}
       </div>
 
-      {/* Tab content */}
-      {activeTab === "edit" && (
-        <ConfigForm config={config} onSaved={handleConfigSaved} />
-      )}
-      {activeTab === "presets" && (
-        <PresetManager onApplied={refetch} />
-      )}
-      {activeTab === "backups" && (
-        <BackupManager onRestored={refetch} />
-      )}
+      {/* Tab content — scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {activeTab === "edit" && (
+          <ConfigForm config={config} onSaved={handleConfigSaved} />
+        )}
+        {activeTab === "presets" && (
+          <PresetManager onApplied={refetch} />
+        )}
+        {activeTab === "backups" && (
+          <BackupManager onRestored={refetch} />
+        )}
+      </div>
     </div>
   );
 }

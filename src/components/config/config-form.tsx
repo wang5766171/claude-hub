@@ -204,42 +204,46 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
     .filter(([, has]) => has).map(([id]) => id);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{t("config.configuration")}</h3>
-        <Button onClick={handleSave} disabled={!hasChanges || saving} size="sm">
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? t("common.saving") : t("common.save")}
-        </Button>
-      </div>
-
-      {/* Template Selector */}
-      <div className="space-y-2">
-        <Label>{t("config.templateTitle")}</Label>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            className={selectClass}
-          >
-            <option value="">{t("config.templateSelect")}</option>
-            {templates.map((tpl) => (
-              <option key={tpl.id} value={tpl.id}>
-                {tpl.name} - {tpl.description}
-              </option>
-            ))}
-          </select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleApplyTemplate(selectedTemplate)}
-            disabled={!selectedTemplate}
-          >
-            {t("config.templateApply")}
+    <div className="flex flex-col h-full">
+      {/* Sticky header: title + save + template */}
+      <div className="sticky top-0 z-10 bg-background pb-3 border-b border-border mb-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">{t("config.configuration")}</h3>
+          <Button onClick={handleSave} disabled={!hasChanges || saving} size="sm">
+            <Save className="h-4 w-4" />
+            {saving ? t("common.saving") : t("common.save")}
           </Button>
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <Label>{t("config.templateTitle")}</Label>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className={selectClass}
+            >
+              <option value="">{t("config.templateSelect")}</option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name} - {tpl.description}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleApplyTemplate(selectedTemplate)}
+              disabled={!selectedTemplate}
+            >
+              {t("config.templateApply")}
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Scrollable accordion area */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       <Accordion type="multiple" defaultValue={expandedDefaults}>
         {sectionOrder.map((sid) => {
           if (sid === "model") return (
@@ -500,6 +504,7 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
           return null;
         })}
       </Accordion>
+      </div>
     </div>
   );
 }
