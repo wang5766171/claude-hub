@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/accordion";
 import { Save, Plus, Trash2 } from "lucide-react";
 import type { ClaudeConfig, ConfigTemplate } from "@/types";
+import { SectionHelp } from "./section-help";
 
 const MODEL_OPTIONS = [
-  "claude-sonnet-4-6",
-  "claude-opus-4-7",
-  "claude-haiku-4-5-20251001",
+  { value: "claude-sonnet-4-6", labelKey: "modelSonnet46" },
+  { value: "claude-opus-4-7", labelKey: "modelOpus47" },
+  { value: "claude-haiku-4-5-20251001", labelKey: "modelHaiku45" },
 ];
 
 const API_PROVIDERS = [
@@ -185,6 +186,23 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
 
   const hasChanges = JSON.stringify(config) !== JSON.stringify(initialConfig);
 
+  // Sections with content come first, empty ones last
+  type SectionId = "env" | "plugins" | "permissions" | "model" | "advanced";
+  const sectionHasContent: Record<SectionId, boolean> = {
+    env: !!config.env && Object.keys(config.env).length > 0,
+    plugins: !!config.enabledPlugins && Object.keys(config.enabledPlugins).length > 0,
+    permissions: !!(config.permissions?.defaultMode || (config.permissions?.allow?.length) || (config.permissions?.deny?.length) || config.permissions?.sandbox?.enabled || config.skipDangerousModePermissionPrompt),
+    model: !!(config.model || config.smallModel || config.largeModel || config.apiProvider),
+    advanced: !!(config.verbose || config.maxTurns),
+  };
+  const sectionOrder: SectionId[] = (["env", "plugins", "permissions", "model", "advanced"] as SectionId[]).sort((a, b) => {
+    if (sectionHasContent[a] && !sectionHasContent[b]) return -1;
+    if (!sectionHasContent[a] && sectionHasContent[b]) return 1;
+    return 0;
+  });
+  const expandedDefaults = (Object.entries(sectionHasContent) as [SectionId, boolean][])
+    .filter(([, has]) => has).map(([id]) => id);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -222,260 +240,265 @@ export function ConfigForm({ config: initialConfig, onSaved }: ConfigFormProps) 
         </div>
       </div>
 
-      <Accordion type="multiple" defaultValue={["model", "permissions", "env", "plugins", "advanced"]}>
-        {/* Model Settings */}
-        <AccordionItem value="model">
-          <AccordionTrigger>{t("config.modelSettings")}</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="model">{t("config.model")}</Label>
-                <select
-                  id="model"
-                  value={config.model || ""}
-                  onChange={(e) => handleModelChange(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">{t("common.default")}</option>
-                  {MODEL_OPTIONS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
+      <Accordion type="multiple" defaultValue={expandedDefaults}>
+        {sectionOrder.map((sid) => {
+          if (sid === "model") return (
+            <AccordionItem key="model" value="model">
+              <AccordionTrigger className="group"><span>{t("config.modelSettings")}<SectionHelp content={t("config.fieldMapModel")} /></span></AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="model">{t("config.model")}</Label>
+                    <select
+                      id="model"
+                      value={config.model || ""}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className={selectClass}
+                    >
+                      <option value="">{t("common.default")}</option>
+                      {MODEL_OPTIONS.map((m) => (
+                        <option key={m.value} value={m.value}>{t(`config.${m.labelKey}`)}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="smallModel">{t("config.smallModel")}</Label>
-                <Input
-                  id="smallModel"
-                  value={config.smallModel || ""}
-                  onChange={(e) => handleSmallModelChange(e.target.value)}
-                  placeholder="e.g., claude-haiku-4-5-20251001"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smallModel">{t("config.smallModel")}</Label>
+                    <Input
+                      id="smallModel"
+                      value={config.smallModel || ""}
+                      onChange={(e) => handleSmallModelChange(e.target.value)}
+                      placeholder="e.g., claude-haiku-4-5-20251001"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="largeModel">{t("config.largeModel")}</Label>
-                <Input
-                  id="largeModel"
-                  value={config.largeModel || ""}
-                  onChange={(e) => handleLargeModelChange(e.target.value)}
-                  placeholder="e.g., claude-opus-4-7"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="largeModel">{t("config.largeModel")}</Label>
+                    <Input
+                      id="largeModel"
+                      value={config.largeModel || ""}
+                      onChange={(e) => handleLargeModelChange(e.target.value)}
+                      placeholder="e.g., claude-opus-4-7"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="apiProvider">{t("config.apiProvider")}</Label>
-                <select
-                  id="apiProvider"
-                  value={config.apiProvider || ""}
-                  onChange={(e) => handleApiProviderChange(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">{t("common.default")}</option>
-                  {API_PROVIDERS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {t(`config.${p.labelKey}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+                  <div className="space-y-2">
+                    <Label htmlFor="apiProvider">{t("config.apiProvider")}</Label>
+                    <select
+                      id="apiProvider"
+                      value={config.apiProvider || ""}
+                      onChange={(e) => handleApiProviderChange(e.target.value)}
+                      className={selectClass}
+                    >
+                      <option value="">{t("common.default")}</option>
+                      {API_PROVIDERS.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {t(`config.${p.labelKey}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
 
-        {/* Permissions & Security */}
-        <AccordionItem value="permissions">
-          <AccordionTrigger>{t("config.permissionsSecurity")}</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="permMode">{t("config.permissionMode")}</Label>
-                <select
-                  id="permMode"
-                  value={config.permissions?.defaultMode || ""}
-                  onChange={(e) => handlePermissionMode(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">{t("common.default")}</option>
-                  {PERMISSION_MODES.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {t(`config.${m.labelKey}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          if (sid === "permissions") return (
+            <AccordionItem key="permissions" value="permissions">
+              <AccordionTrigger className="group"><span>{t("config.permissionsSecurity")}<SectionHelp content={t("config.fieldMapPermissions")} /></span></AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="permMode">{t("config.permissionMode")}</Label>
+                    <select
+                      id="permMode"
+                      value={config.permissions?.defaultMode || ""}
+                      onChange={(e) => handlePermissionMode(e.target.value)}
+                      className={selectClass}
+                    >
+                      <option value="">{t("common.default")}</option>
+                      {PERMISSION_MODES.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {t(`config.${m.labelKey}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Allow List */}
-              <div className="space-y-2">
-                <Label>{t("config.allowList")}</Label>
-                <div className="space-y-2">
-                  {(config.permissions?.allow ?? []).map((pattern, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono">{pattern}</code>
-                      <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveAllowPattern(idx)}>
+                  <div className="space-y-2">
+                    <Label>{t("config.allowList")}</Label>
+                    <div className="space-y-2">
+                      {(config.permissions?.allow ?? []).map((pattern, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono">{pattern}</code>
+                          <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveAllowPattern(idx)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={newAllowPattern}
+                          onChange={(e) => setNewAllowPattern(e.target.value)}
+                          placeholder={t("config.patternPlaceholder")}
+                          className="flex-1"
+                          onKeyDown={(e) => e.key === "Enter" && handleAddAllowPattern()}
+                        />
+                        <Button variant="outline" size="sm" onClick={handleAddAllowPattern} disabled={!newAllowPattern.trim()}>
+                          <Plus className="mr-1 h-3 w-3" />
+                          {t("config.addPattern")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t("config.denyList")}</Label>
+                    <div className="space-y-2">
+                      {(config.permissions?.deny ?? []).map((pattern, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono">{pattern}</code>
+                          <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveDenyPattern(idx)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={newDenyPattern}
+                          onChange={(e) => setNewDenyPattern(e.target.value)}
+                          placeholder={t("config.patternPlaceholder")}
+                          className="flex-1"
+                          onKeyDown={(e) => e.key === "Enter" && handleAddDenyPattern()}
+                        />
+                        <Button variant="outline" size="sm" onClick={handleAddDenyPattern} disabled={!newDenyPattern.trim()}>
+                          <Plus className="mr-1 h-3 w-3" />
+                          {t("config.addPattern")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-md border px-3 py-3">
+                    <div className="space-y-0.5">
+                      <Label>{t("config.sandbox")}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {config.sandbox?.enabled ? t("config.enabled") : t("config.disabled")}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={config.sandbox?.enabled === true}
+                      onCheckedChange={handleSandboxEnabled}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-md border px-3 py-3">
+                    <div className="space-y-0.5">
+                      <Label>{t("config.skipDangerous")}</Label>
+                      <p className="text-xs text-muted-foreground">{t("config.skipDangerousDesc")}</p>
+                    </div>
+                    <Switch
+                      checked={config.skipDangerousModePermissionPrompt === true}
+                      onCheckedChange={handleSkipDangerous}
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+
+          if (sid === "env") return (
+            <AccordionItem key="env" value="env">
+              <AccordionTrigger className="group"><span>{t("config.envVars")}<SectionHelp content={t("config.fieldMapEnv")} /></span></AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2 pt-2">
+                  {Object.entries(config.env || {}).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <code className="min-w-[140px] rounded bg-muted px-2 py-1 text-xs font-mono">{key}</code>
+                      <Input
+                        value={value}
+                        onChange={(e) => handleEnvChange(key, e.target.value)}
+                        className="flex-1"
+                        placeholder={t("config.value")}
+                      />
+                      <Button variant="ghost" size="icon-xs" onClick={() => handleEnvDelete(key)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}
                   <div className="flex items-center gap-2">
                     <Input
-                      value={newAllowPattern}
-                      onChange={(e) => setNewAllowPattern(e.target.value)}
-                      placeholder={t("config.patternPlaceholder")}
-                      className="flex-1"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddAllowPattern()}
+                      value={newEnvKey}
+                      onChange={(e) => setNewEnvKey(e.target.value)}
+                      className="min-w-[140px]"
+                      placeholder={t("config.key")}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddEnv()}
                     />
-                    <Button variant="outline" size="sm" onClick={handleAddAllowPattern} disabled={!newAllowPattern.trim()}>
+                    <Button variant="outline" size="sm" onClick={handleAddEnv} disabled={!newEnvKey.trim()}>
                       <Plus className="mr-1 h-3 w-3" />
-                      {t("config.addPattern")}
+                      {t("common.add")}
                     </Button>
                   </div>
                 </div>
-              </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
 
-              {/* Deny List */}
-              <div className="space-y-2">
-                <Label>{t("config.denyList")}</Label>
-                <div className="space-y-2">
-                  {(config.permissions?.deny ?? []).map((pattern, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono">{pattern}</code>
-                      <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveDenyPattern(idx)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+          if (sid === "plugins") return (
+            <AccordionItem key="plugins" value="plugins">
+              <AccordionTrigger className="group"><span>{t("config.enabledPlugins")}<SectionHelp content={t("config.fieldMapPlugins")} /></span></AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2 pt-2">
+                  {Object.entries(config.enabledPlugins || {}).map(([plugin, enabled]) => (
+                    <div key={plugin} className="flex items-center justify-between rounded-md border px-3 py-2">
+                      <code className="text-xs font-mono">{plugin}</code>
+                      <div className="flex items-center gap-2">
+                        <Switch checked={enabled} onCheckedChange={(checked) => handlePluginToggle(plugin, checked)} />
+                        <Button variant="ghost" size="icon-xs" onClick={() => handlePluginDelete(plugin)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={newDenyPattern}
-                      onChange={(e) => setNewDenyPattern(e.target.value)}
-                      placeholder={t("config.patternPlaceholder")}
-                      className="flex-1"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddDenyPattern()}
+                  {(!config.enabledPlugins || Object.keys(config.enabledPlugins).length === 0) && (
+                    <p className="text-sm text-muted-foreground">{t("config.noPlugins")}</p>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+
+          if (sid === "advanced") return (
+            <AccordionItem key="advanced" value="advanced">
+              <AccordionTrigger className="group"><span>{t("config.advanced")}<SectionHelp content={t("config.fieldMapAdvanced")} /></span></AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between rounded-md border px-3 py-3">
+                    <Label>{t("config.verbose")}</Label>
+                    <Switch
+                      checked={config.verbose === true}
+                      onCheckedChange={handleVerbose}
                     />
-                    <Button variant="outline" size="sm" onClick={handleAddDenyPattern} disabled={!newDenyPattern.trim()}>
-                      <Plus className="mr-1 h-3 w-3" />
-                      {t("config.addPattern")}
-                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="maxTurns">{t("config.maxTurns")}</Label>
+                    <Input
+                      id="maxTurns"
+                      type="number"
+                      min={1}
+                      value={config.maxTurns ?? ""}
+                      onChange={(e) => handleMaxTurns(e.target.value)}
+                      placeholder="e.g., 200"
+                    />
                   </div>
                 </div>
-              </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
 
-              {/* Sandbox */}
-              <div className="flex items-center justify-between rounded-md border px-3 py-3">
-                <div className="space-y-0.5">
-                  <Label>{t("config.sandbox")}</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {config.sandbox?.enabled ? t("config.enabled") : t("config.disabled")}
-                  </p>
-                </div>
-                <Switch
-                  checked={config.sandbox?.enabled === true}
-                  onCheckedChange={handleSandboxEnabled}
-                />
-              </div>
-
-              {/* Skip Dangerous */}
-              <div className="flex items-center justify-between rounded-md border px-3 py-3">
-                <div className="space-y-0.5">
-                  <Label>{t("config.skipDangerous")}</Label>
-                  <p className="text-xs text-muted-foreground">{t("config.skipDangerousDesc")}</p>
-                </div>
-                <Switch
-                  checked={config.skipDangerousModePermissionPrompt === true}
-                  onCheckedChange={handleSkipDangerous}
-                />
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Environment Variables */}
-        <AccordionItem value="env">
-          <AccordionTrigger>{t("config.envVars")}</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-2 pt-2">
-              {Object.entries(config.env || {}).map(([key, value]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <code className="min-w-[140px] rounded bg-muted px-2 py-1 text-xs font-mono">{key}</code>
-                  <Input
-                    value={value}
-                    onChange={(e) => handleEnvChange(key, e.target.value)}
-                    className="flex-1"
-                    placeholder={t("config.value")}
-                  />
-                  <Button variant="ghost" size="icon-xs" onClick={() => handleEnvDelete(key)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-              <div className="flex items-center gap-2">
-                <Input
-                  value={newEnvKey}
-                  onChange={(e) => setNewEnvKey(e.target.value)}
-                  className="min-w-[140px]"
-                  placeholder={t("config.key")}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddEnv()}
-                />
-                <Button variant="outline" size="sm" onClick={handleAddEnv} disabled={!newEnvKey.trim()}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  {t("common.add")}
-                </Button>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Plugins */}
-        <AccordionItem value="plugins">
-          <AccordionTrigger>{t("config.enabledPlugins")}</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-2 pt-2">
-              {Object.entries(config.enabledPlugins || {}).map(([plugin, enabled]) => (
-                <div key={plugin} className="flex items-center justify-between rounded-md border px-3 py-2">
-                  <code className="text-xs font-mono">{plugin}</code>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={enabled} onCheckedChange={(checked) => handlePluginToggle(plugin, checked)} />
-                    <Button variant="ghost" size="icon-xs" onClick={() => handlePluginDelete(plugin)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {(!config.enabledPlugins || Object.keys(config.enabledPlugins).length === 0) && (
-                <p className="text-sm text-muted-foreground">{t("config.noPlugins")}</p>
-              )}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Advanced Settings */}
-        <AccordionItem value="advanced">
-          <AccordionTrigger>{t("config.advanced")}</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between rounded-md border px-3 py-3">
-                <Label>{t("config.verbose")}</Label>
-                <Switch
-                  checked={config.verbose === true}
-                  onCheckedChange={handleVerbose}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="maxTurns">{t("config.maxTurns")}</Label>
-                <Input
-                  id="maxTurns"
-                  type="number"
-                  min={1}
-                  value={config.maxTurns ?? ""}
-                  onChange={(e) => handleMaxTurns(e.target.value)}
-                  placeholder="e.g., 200"
-                />
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          return null;
+        })}
       </Accordion>
     </div>
   );

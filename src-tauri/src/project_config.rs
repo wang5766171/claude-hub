@@ -75,16 +75,22 @@ pub fn load_project_settings_local(project_path: &str) -> Result<ProjectSettings
 pub fn save_project_settings(project_path: &str, settings: &ProjectSettings) -> Result<(), Box<dyn std::error::Error>> {
     ensure_claude_dir(project_path)?;
     let path = settings_path(project_path);
-    let json = serde_json::to_string_pretty(settings)?;
-    std::fs::write(&path, json)?;
+    let mut val = serde_json::to_value(settings)?;
+    if let Some(obj) = val.as_object_mut() {
+        obj.retain(|_, v| !v.is_null());
+    }
+    std::fs::write(&path, serde_json::to_string_pretty(&val)?)?;
     Ok(())
 }
 
 pub fn save_project_settings_local(project_path: &str, settings: &ProjectSettings) -> Result<(), Box<dyn std::error::Error>> {
     ensure_claude_dir(project_path)?;
     let path = settings_local_path(project_path);
-    let json = serde_json::to_string_pretty(settings)?;
-    std::fs::write(&path, json)?;
+    let mut val = serde_json::to_value(settings)?;
+    if let Some(obj) = val.as_object_mut() {
+        obj.retain(|_, v| !v.is_null());
+    }
+    std::fs::write(&path, serde_json::to_string_pretty(&val)?)?;
     Ok(())
 }
 

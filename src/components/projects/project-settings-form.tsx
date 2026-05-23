@@ -5,18 +5,19 @@ import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save } from "lucide-react";
 import type { ProjectSettings } from "@/types";
+import { SectionHelp } from "@/components/config/section-help";
 
 const MODEL_OPTIONS = [
-  { value: "", label: "Default" },
-  { value: "claude-sonnet-4-6", label: "Sonnet 4.6" },
-  { value: "claude-opus-4-7", label: "Opus 4.7" },
-  { value: "claude-haiku-4-5-20251001", label: "Haiku 4.5" },
+  { value: "", labelKey: "common.default" },
+  { value: "claude-sonnet-4-6", labelKey: "config.modelSonnet46" },
+  { value: "claude-opus-4-7", labelKey: "config.modelOpus47" },
+  { value: "claude-haiku-4-5-20251001", labelKey: "config.modelHaiku45" },
 ];
 
 const MODE_OPTIONS = [
-  { value: "default", label: "default" },
-  { value: "bypassPermissions", label: "bypassPermissions" },
-  { value: "plan", label: "plan" },
+  { value: "default", labelKey: "config.modeDefault" },
+  { value: "bypassPermissions", labelKey: "config.modeBypass" },
+  { value: "plan", labelKey: "config.modePlan" },
 ];
 
 interface ProjectSettingsFormProps {
@@ -101,21 +102,21 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
 
       {/* Model */}
       <div>
-        <label className="text-sm font-medium">{t("config.model")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("config.model")}<SectionHelp content={t("projectConfig.fieldMapModel")} /></span>
         <select
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           value={settings.model ?? ""}
           onChange={(e) => update({ model: e.target.value || null })}
         >
           {MODEL_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
           ))}
         </select>
       </div>
 
       {/* Default Mode */}
       <div>
-        <label className="text-sm font-medium">{t("projectConfig.defaultMode")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("projectConfig.defaultMode")}<SectionHelp content={t("projectConfig.fieldMapMode")} /></span>
         <select
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           value={settings.permissions?.defaultMode ?? ""}
@@ -123,14 +124,14 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
         >
           <option value="">{t("common.default")}</option>
           {MODE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
           ))}
         </select>
       </div>
 
       {/* Allow List */}
       <div>
-        <label className="text-sm font-medium">{t("projectConfig.allowList")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("projectConfig.allowList")}<SectionHelp content={t("projectConfig.fieldMapAllow")} /></span>
         <div className="mt-1 space-y-1">
           {(settings.permissions?.allow ?? []).map((item, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -182,7 +183,7 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
 
       {/* Deny List */}
       <div>
-        <label className="text-sm font-medium">{t("projectConfig.denyList")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("projectConfig.denyList")}<SectionHelp content={t("projectConfig.fieldMapDeny")} /></span>
         <div className="mt-1 space-y-1">
           {(settings.permissions?.deny ?? []).map((item, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -234,7 +235,7 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
 
       {/* Hooks (read-only view) */}
       <div>
-        <label className="text-sm font-medium">{t("projectConfig.hooks")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("projectConfig.hooks")}<SectionHelp content={t("projectConfig.fieldMapHooks")} /></span>
         {settings.hooks && Object.keys(settings.hooks).length > 0 ? (
           <div className="mt-1 space-y-2">
             {Object.entries(settings.hooks).map(([event, entries]) => (
@@ -279,7 +280,7 @@ export function ProjectSettingsForm({ projectPath }: ProjectSettingsFormProps) {
 
       {/* Environment Variables */}
       <div>
-        <label className="text-sm font-medium">{t("config.envVars")}</label>
+        <span className="text-sm font-medium inline-flex items-center gap-1">{t("config.envVars")}<SectionHelp content={t("projectConfig.fieldMapEnv")} /></span>
         <div className="mt-1 space-y-1">
           {Object.entries(settings.env ?? {}).map(([key, val]) => (
             <div key={key} className="flex items-center gap-2">

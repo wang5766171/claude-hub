@@ -167,6 +167,11 @@ pub fn save_config(config: &ClaudeConfig) -> Result<(), Box<dyn std::error::Erro
 
     let mut new_value = serde_json::to_value(config).map_err(|e| e.to_string())?;
 
+    // Remove null values — don't write keys that have no configured value
+    if let Some(obj) = new_value.as_object_mut() {
+        obj.retain(|_, v| !v.is_null());
+    }
+
     if let (Some(existing_obj), Some(new_obj)) = (existing, new_value.as_object_mut()) {
         for (key, value) in existing_obj.as_object().unwrap_or(&serde_json::Map::new()) {
             if !new_obj.contains_key(key) {
