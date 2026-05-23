@@ -85,7 +85,9 @@
     "newSession": "New session",
     "resuming": "Opening terminal...",
     "toolCalls": "Tool Calls ({{count}})",
-    "thinkingDots": "Thinking..."
+    "thinkingDots": "Thinking...",
+    "newChat": "New Chat",
+    "streamError": "Stream terminated unexpectedly, image path format may not be supported"
   },
   "config": {
     "title": "Configuration",

@@ -85,7 +85,9 @@
     "newSession": "新建会话",
     "resuming": "正在打开终端...",
     "toolCalls": "工具调用 ({{count}})",
-    "thinkingDots": "思考中..."
+    "thinkingDots": "思考中...",
+    "newChat": "新对话",
+    "streamError": "流式响应异常终止，图片路径格式可能不受支持"
   },
   "config": {
     "title": "配置管理",
