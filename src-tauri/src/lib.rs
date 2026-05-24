@@ -412,6 +412,7 @@ pub fn run() {
             image::save_session_files,
             image::read_image_as_data_url,
             image::read_file_as_base64,
+            image::get_clipboard_file_paths,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

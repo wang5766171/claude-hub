@@ -120,6 +120,32 @@ pub fn read_file_as_base64(path: String) -> Result<String, String> {
     Ok(BASE64.encode(&bytes))
 }
 
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub fn get_clipboard_file_paths() -> Result<Vec<String>, String> {
+    let output = std::process::Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetFileDropList() | ForEach-Object { $_ }",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to query clipboard: {}", e))?;
+    let paths: Vec<String> = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|l| l.trim().to_string())
+        .filter(|l| !l.is_empty())
+        .collect();
+    Ok(paths)
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+pub fn get_clipboard_file_paths() -> Result<Vec<String>, String> {
+    Ok(vec![])
+}
+
 #[tauri::command]
 pub fn read_image_as_data_url(path: String) -> Result<String, String> {
     let bytes = fs::read(&path).map_err(|e| format!("Failed to read image: {}", e))?;

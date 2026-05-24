@@ -64,31 +64,84 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
         for (let i = 0; i < items.length; i++) {
           if (!items[i].type.startsWith("text/")) { hasNonText = true; break; }
         }
-        // If items has non-text blobs, those are likely images handled below
         if (!hasNonText) {
-          const newFiles: AttachedFile[] = [];
-          Array.from(osFiles).forEach((file, i) => {
-            const filename = file.name || `file-${i + 1}`;
-            const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
-            const isImage = imageExts.has(ext) || file.type.startsWith("image/");
-            const idx = files.length + newFiles.length + 1;
-            const reader = new FileReader();
-            reader.onload = () => {
-              const base64 = (reader.result as string).split(",")[1];
-              newFiles.push({
-                id: `paste-${Date.now()}-${i}`,
-                data: base64,
-                filename,
-                label: filename.replace(/\.\w+$/, ""),
-                isImage,
-              });
-              if (newFiles.length === osFiles.length) {
-                setFiles((prev) => [...prev, ...newFiles]);
-              }
-            };
-            reader.readAsDataURL(file);
-          });
           e.preventDefault();
+          // Get actual file paths from system clipboard via backend
+          invokeCommand<string[]>("get_clipboard_file_paths").then((clipPaths) => {
+            const newFiles: AttachedFile[] = [];
+            Array.from(osFiles).forEach((file, i) => {
+              const filename = file.name || `file-${i + 1}`;
+              const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
+              const isImage = imageExts.has(ext) || file.type.startsWith("image/");
+              const idx = files.length + i + 1;
+
+              // Match clipboard path by filename
+              const clipPath = clipPaths?.find((p) => {
+                const clipName = p.replace(/\\/g, "/").split("/").pop();
+                return clipName === filename;
+              });
+
+              if (clipPath && projectPath && isInsideProject(clipPath, projectPath)) {
+                // Project-local file: reference path directly, no base64 needed
+                newFiles.push({
+                  id: `paste-${Date.now()}-${i}`,
+                  data: "",
+                  filename,
+                  label: isImage ? t("projects.imageLabel", { index: idx }) : filename.replace(/\.\w+$/, ""),
+                  isImage,
+                  localPath: clipPath,
+                });
+              } else {
+                // External file or unknown path: read base64
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64 = (reader.result as string).split(",")[1];
+                  const entry: AttachedFile = {
+                    id: `paste-${Date.now()}-${i}`,
+                    data: base64,
+                    filename,
+                    label: isImage ? t("projects.imageLabel", { index: idx }) : filename.replace(/\.\w+$/, ""),
+                    isImage,
+                  };
+                  if (clipPath) entry.localPath = clipPath;
+                  setFiles((prev) => [...prev, entry]);
+                };
+                reader.readAsDataURL(file);
+                return; // skip push below, handled in async callback
+              }
+
+              setFiles((prev) => [...prev, ...newFiles.splice(0)]);
+            });
+
+            // Push any remaining local files that were added synchronously
+            if (newFiles.length > 0) {
+              setFiles((prev) => [...prev, ...newFiles]);
+            }
+          }).catch(() => {
+            // Fallback: read as base64 without path detection
+            const newFiles: AttachedFile[] = [];
+            Array.from(osFiles).forEach((file, i) => {
+              const filename = file.name || `file-${i + 1}`;
+              const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
+              const isImage = imageExts.has(ext) || file.type.startsWith("image/");
+              const idx = files.length + i + 1;
+              const reader = new FileReader();
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(",")[1];
+                newFiles.push({
+                  id: `paste-${Date.now()}-${i}`,
+                  data: base64,
+                  filename,
+                  label: isImage ? t("projects.imageLabel", { index: idx }) : filename.replace(/\.\w+$/, ""),
+                  isImage,
+                });
+                if (newFiles.length === osFiles.length) {
+                  setFiles((prev) => [...prev, ...newFiles]);
+                }
+              };
+              reader.readAsDataURL(file);
+            });
+          });
           return;
         }
       }
