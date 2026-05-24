@@ -50,7 +50,6 @@ function ProjectSessionGroup({
   sessionNames,
   onSelectSession,
   showNewChat,
-  refreshKey,
 }: {
   project: Project;
   isCollapsed: boolean;
@@ -58,14 +57,18 @@ function ProjectSessionGroup({
   sessionNames: Record<string, string> | null | undefined;
   onSelectSession: (sessionId: string, projectName: string) => void;
   showNewChat?: boolean;
-  refreshKey?: number;
 }) {
   const { data: sessions } = useInvoke<Session[]>(
     "list_sessions",
-    { encodedName: project.encoded_name, _refresh: refreshKey }
+    { encodedName: project.encoded_name }
   );
 
   if (!sessions || !sessionNames) return null;
+
+  // When fake "新对话" is showing, hide the real session to avoid duplication
+  const visibleSessions = showNewChat
+    ? sessions.filter(s => s.id !== selectedSessionId)
+    : sessions;
 
   return (
     <div className={isCollapsed ? "hidden" : ""}>
@@ -77,7 +80,7 @@ function ProjectSessionGroup({
           <span className="truncate flex-1 text-left min-w-0">新对话</span>
         </button>
       )}
-      {sessions.map((session) => {
+      {visibleSessions.map((session) => {
         const isActive = selectedSessionId === session.id;
         const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
         const timeStr = session.last_active
@@ -133,7 +136,6 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   const [viewingProject, setViewingProject] = useState<string | null>(null);
   const [newChatPath, setNewChatPath] = useState<string | null>(null);
   const [isNewChat, setIsNewChat] = useState(false);
-  const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
   const pendingUserMsgRef = useRef<string | null>(null);
@@ -333,12 +335,10 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           setPendingUserMessage(null);
           pendingUserMsgRef.current = null;
 
-          // Extract real session_id from result and transition from fake session
+          // Extract real session_id from result and update selection
           const realSessionId = (chunk.data as Record<string, unknown>)?.session_id as string | undefined;
           if (realSessionId && realSessionId !== chunk.session_id) {
             setSelectedSession(realSessionId);
-            setIsNewChat(false);
-            setSessionsRefreshKey(k => k + 1);
           }
 
           requestAnimationFrame(() => {
@@ -493,7 +493,6 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
                   sessionNames={sessionNames}
                   onSelectSession={handleSelectSession}
                   showNewChat={isNewChat && viewingProject === project.encoded_name}
-                  refreshKey={sessionsRefreshKey}
                 />
               </div>
             );
