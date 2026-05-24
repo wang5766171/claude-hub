@@ -568,7 +568,7 @@ export function ChatPage({
                 <span className="truncate flex-1 text-left min-w-0 leading-none pt-[1px]">{name}</span>
                 {timeStr && (
                   <span className={cn(
-                    "text-[10px] shrink-0 tabular-nums",
+                    "text-[0.65em] shrink-0 tabular-nums",
                     isActive ? "text-accent-foreground/40" : "text-muted-foreground/40"
                   )}>{timeStr}</span>
                 )}
