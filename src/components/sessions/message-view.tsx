@@ -145,7 +145,7 @@ function TextBlock({ text, query, dark, matchOffset, currentMatch }: { text: str
   if (dark) {
     const display = stripImagePrompt(text);
     return (
-      <div className="whitespace-pre-wrap break-all text-sm overflow-hidden">
+      <div className="whitespace-pre-wrap break-all overflow-hidden" style={{ fontSize: "var(--font-size-prose)" }}>
         {query ? highlightText(display, query, matchOffset ?? 0, currentMatch ?? -1) : display}
       </div>
     );

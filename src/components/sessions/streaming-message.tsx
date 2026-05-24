@@ -95,7 +95,7 @@ export const StreamingMessage = memo(function StreamingMessage({ chunks, isCompl
             <div className="flex items-center gap-2 mb-1 text-xs">
               <span className="font-medium text-muted-foreground">{t("sessions.user")}</span>
             </div>
-            <div className="rounded-xl px-3.5 py-2.5 bg-blue-500 text-white whitespace-pre-wrap break-all text-sm overflow-hidden min-w-0 max-w-full">
+            <div className="rounded-xl px-3.5 py-2.5 bg-blue-500 text-white whitespace-pre-wrap break-all overflow-hidden min-w-0 max-w-full" style={{ fontSize: "var(--font-size-prose)" }}>
               <InlineImages text={userMessage} />
               {stripImagePrompt(userMessage)}
             </div>

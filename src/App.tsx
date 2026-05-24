@@ -188,7 +188,7 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
               <div className="flex items-center gap-2 mb-2">
                 <img src={logo} alt="" className="h-6 w-6 rounded" />
                 <span className="text-sm font-semibold">Jishu Hub</span>
-                {version && <span className="text-[11px] text-muted-foreground font-mono">v{version}</span>}
+                {version && <span className="text-[0.7em] text-muted-foreground font-mono">v{version}</span>}
               </div>
               <div className="flex flex-col gap-1.5 mt-3">
                 <button
