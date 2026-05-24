@@ -49,8 +49,10 @@
     "merging": "合并中...",
     "splitProject": "拆分项目（{{count}} 个子项目）",
     "imageLabel": "图片{{index}}",
+    "fileLabel": "文件{{index}}",
     "enterChat": "进入会话",
-    "defaultImageMessage": "请查看这张图片"
+    "defaultImageMessage": "请查看这张图片",
+    "defaultFileMessage": "请查看这些文件"
   },
   "sessions": {
     "projects": "项目",
@@ -83,11 +85,11 @@
     "copy": "复制",
     "copied": "已复制",
     "chatPlaceholder": "输入消息发送到当前会话...",
-    "chatPlaceholderSingleImage": "描述你希望 Claude 对这张图片做什么，或直接发送",
-    "chatPlaceholderMultiImage": "已按上传顺序标注图片（图片1、图片2...），建议简要说明各图片用途，以便 AI 准确理解",
+    "chatPlaceholderSingleFile": "描述你希望 Claude 对这个文件做什么，或直接发送",
+    "chatPlaceholderMultiFile": "已按上传顺序标注文件（文件1、文件2...），建议简要说明各文件用途，以便 AI 准确理解",
     "send": "发送",
     "stop": "停止",
-    "attachImage": "添加图片",
+    "attachImage": "添加附件",
     "newSession": "新建会话",
     "refresh": "刷新列表",
     "openTerminal": "打开终端",

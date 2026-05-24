@@ -4,68 +4,107 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
-pub struct InputImage {
+pub struct InputFile {
     pub data: String,
     pub filename: String,
     pub label: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct SavedImage {
+pub struct SavedFile {
     pub path: String,
     pub label: String,
     pub index: u32,
     pub batch_id: String,
 }
 
-fn session_pics_dir(project_path: &str) -> PathBuf {
+fn session_files_dir(project_path: &str) -> PathBuf {
     PathBuf::from(project_path)
         .join(".claude_hub")
-        .join("session_pics")
+        .join("session_files")
 }
 
 fn mime_for_ext(ext: &str) -> &'static str {
     match ext.to_ascii_lowercase().as_str() {
+        // Images
         "jpg" | "jpeg" => "image/jpeg",
         "gif" => "image/gif",
         "webp" => "image/webp",
         "bmp" => "image/bmp",
-        _ => "image/png",
+        "png" => "image/png",
+        "svg" => "image/svg+xml",
+        "ico" => "image/x-icon",
+        // Documents
+        "pdf" => "application/pdf",
+        "doc" | "docx" => "application/msword",
+        "xls" | "xlsx" => "application/vnd.ms-excel",
+        "ppt" | "pptx" => "application/vnd.ms-powerpoint",
+        // Text / code
+        "txt" | "log" => "text/plain",
+        "md" => "text/markdown",
+        "json" => "application/json",
+        "xml" => "application/xml",
+        "yaml" | "yml" => "text/yaml",
+        "toml" => "text/toml",
+        "csv" => "text/csv",
+        "html" | "htm" => "text/html",
+        "css" => "text/css",
+        "js" | "mjs" => "text/javascript",
+        "ts" | "tsx" | "jsx" => "text/typescript",
+        "py" => "text/x-python",
+        "rs" => "text/x-rust",
+        "go" => "text/x-go",
+        "java" => "text/x-java",
+        "c" | "h" => "text/x-c",
+        "cpp" | "hpp" | "cc" => "text/x-c++",
+        "cs" => "text/x-csharp",
+        "rb" => "text/x-ruby",
+        "php" => "text/x-php",
+        "swift" => "text/x-swift",
+        "kt" => "text/x-kotlin",
+        "sh" | "bash" | "zsh" => "text/x-shellscript",
+        "sql" => "text/x-sql",
+        // Archives
+        "zip" => "application/zip",
+        "gz" | "tar" => "application/gzip",
+        "rar" => "application/x-rar-compressed",
+        "7z" => "application/x-7z-compressed",
+        _ => "application/octet-stream",
     }
 }
 
 #[tauri::command]
-pub fn save_session_images(
+pub fn save_session_files(
     project_path: String,
-    images: Vec<InputImage>,
-) -> Result<Vec<SavedImage>, String> {
+    files: Vec<InputFile>,
+) -> Result<Vec<SavedFile>, String> {
     let batch_id = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
-    let dir = session_pics_dir(&project_path).join(&batch_id);
+    let dir = session_files_dir(&project_path).join(&batch_id);
     fs::create_dir_all(&dir).map_err(|e| format!("Failed to create dir: {}", e))?;
 
     let mut saved = Vec::new();
 
-    for (i, img) in images.iter().enumerate() {
+    for (i, file) in files.iter().enumerate() {
         let index = (i + 1) as u32;
-        let label = img
+        let label = file
             .label
             .clone()
-            .unwrap_or_else(|| format!("\u{56de}\u{7247}{}", index));
-        let ext = PathBuf::from(&img.filename)
+            .unwrap_or_else(|| format!("文件{}", index));
+        let ext = PathBuf::from(&file.filename)
             .extension()
             .and_then(|e| e.to_str())
-            .unwrap_or("png")
+            .unwrap_or("bin")
             .to_string();
         let filename = format!("{}_{}.{}", index, label, ext);
         let filepath = dir.join(&filename);
 
         let bytes = BASE64
-            .decode(&img.data)
-            .map_err(|e| format!("Decode failed for {}: {}", img.filename, e))?;
+            .decode(&file.data)
+            .map_err(|e| format!("Decode failed for {}: {}", file.filename, e))?;
         fs::write(&filepath, bytes)
             .map_err(|e| format!("Write failed for {}: {}", filename, e))?;
 
-        saved.push(SavedImage {
+        saved.push(SavedFile {
             path: filepath.to_string_lossy().to_string(),
             label,
             index,
@@ -73,6 +112,12 @@ pub fn save_session_images(
         });
     }
     Ok(saved)
+}
+
+#[tauri::command]
+pub fn read_file_as_base64(path: String) -> Result<String, String> {
+    let bytes = fs::read(&path).map_err(|e| format!("Failed to read file: {}", e))?;
+    Ok(BASE64.encode(&bytes))
 }
 
 #[tauri::command]

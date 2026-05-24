@@ -409,8 +409,9 @@ pub fn run() {
             get_app_dir,
             chat::send_message,
             chat::abort_chat,
-            image::save_session_images,
+            image::save_session_files,
             image::read_image_as_data_url,
+            image::read_file_as_base64,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

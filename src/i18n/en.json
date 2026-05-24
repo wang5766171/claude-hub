@@ -49,8 +49,10 @@
     "merging": "Merging...",
     "splitProject": "Split Project ({{count}} sub-projects)",
     "imageLabel": "Image {{index}}",
+    "fileLabel": "File {{index}}",
     "enterChat": "Enter Chat",
-    "defaultImageMessage": "Please review this image"
+    "defaultImageMessage": "Please review this image",
+    "defaultFileMessage": "Please review these files"
   },
   "sessions": {
     "projects": "Projects",
@@ -83,11 +85,11 @@
     "copy": "Copy",
     "copied": "Copied",
     "chatPlaceholder": "Type a message to send to the current session...",
-    "chatPlaceholderSingleImage": "Describe what you want Claude to do with this image, or just send",
-    "chatPlaceholderMultiImage": "Images are labeled in upload order (Image 1, Image 2...). Briefly describe each for accurate AI understanding",
+    "chatPlaceholderSingleFile": "Describe what you want Claude to do with this file, or just send",
+    "chatPlaceholderMultiFile": "Files are labeled in upload order (File 1, File 2...). Briefly describe each for accurate AI understanding",
     "send": "Send",
     "stop": "Stop",
-    "attachImage": "Attach image",
+    "attachImage": "Attach file",
     "newSession": "New session",
     "refresh": "Refresh list",
     "openTerminal": "Open terminal",

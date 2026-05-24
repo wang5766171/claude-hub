@@ -3,15 +3,18 @@ import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { Button } from "@/components/ui/button";
 import { Send, Square, Paperclip } from "lucide-react";
-import { ImagePreview } from "./image-preview";
+import { FilePreview } from "./file-preview";
 import { listen } from "@tauri-apps/api/event";
-import type { SavedImage, StreamChunk } from "@/types";
+import { open } from "@tauri-apps/plugin-dialog";
+import type { SavedFile, StreamChunk } from "@/types";
 
-interface AttachedImage {
+interface AttachedFile {
   id: string;
-  data: string;
+  data: string;           // base64 for uploads, empty for local project files
   filename: string;
   label: string;
+  isImage: boolean;
+  localPath?: string;     // set when file is inside project directory
 }
 
 interface ChatInputProps {
@@ -19,6 +22,12 @@ interface ChatInputProps {
   projectPath: string | null;
   disabled?: boolean;
   onMessageSent?: (chatSessionId: string, userMessage: string) => void;
+}
+
+function isInsideProject(filePath: string, projectPath: string): boolean {
+  const normFile = filePath.replace(/\\/g, "/").toLowerCase();
+  const normProject = projectPath.replace(/\\/g, "/").toLowerCase();
+  return normFile.startsWith(normProject.endsWith("/") ? normProject : normProject + "/");
 }
 
 export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({
@@ -29,108 +38,185 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
 }: ChatInputProps, ref) {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
-  const [images, setImages] = useState<AttachedImage[]>([]);
+  const [files, setFiles] = useState<AttachedFile[]>([]);
   const [sending, setSending] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useImperativeHandle(ref, () => textareaRef.current!, []);
 
   const placeholder =
-    images.length === 0
+    files.length === 0
       ? t("sessions.chatPlaceholder")
-      : images.length === 1
-        ? t("sessions.chatPlaceholderSingleImage")
-        : t("sessions.chatPlaceholderMultiImage");
+      : files.length === 1
+        ? t("sessions.chatPlaceholderSingleFile")
+        : t("sessions.chatPlaceholderMultiFile");
 
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
+      const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "ico"]);
       const items = e.clipboardData.items;
-      const newImages: AttachedImage[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.startsWith("image/")) {
-          const file = item.getAsFile();
-          if (!file) continue;
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = (reader.result as string).split(",")[1];
-            const idx = images.length + newImages.length + 1;
-            setImages((prev) => [
-              ...prev,
-              {
+      const osFiles = e.clipboardData.files;
+
+      // 1. OS file copy (Windows: files appear in clipboardData.files, not items)
+      if (osFiles && osFiles.length > 0) {
+        let hasNonText = false;
+        for (let i = 0; i < items.length; i++) {
+          if (!items[i].type.startsWith("text/")) { hasNonText = true; break; }
+        }
+        // If items has non-text blobs, those are likely images handled below
+        if (!hasNonText) {
+          const newFiles: AttachedFile[] = [];
+          Array.from(osFiles).forEach((file, i) => {
+            const filename = file.name || `file-${i + 1}`;
+            const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
+            const isImage = imageExts.has(ext) || file.type.startsWith("image/");
+            const idx = files.length + newFiles.length + 1;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = (reader.result as string).split(",")[1];
+              newFiles.push({
                 id: `paste-${Date.now()}-${i}`,
                 data: base64,
-                filename: file.name || `pasted-image-${idx}.png`,
-                label: t("projects.imageLabel", { index: idx }),
-              },
-            ]);
-          };
-          reader.readAsDataURL(file);
+                filename,
+                label: filename.replace(/\.\w+$/, ""),
+                isImage,
+              });
+              if (newFiles.length === osFiles.length) {
+                setFiles((prev) => [...prev, ...newFiles]);
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+          e.preventDefault();
+          return;
         }
       }
+
+      // 2. Blob-based paste (screenshots, image copies from browser, etc.)
+      const newFiles: AttachedFile[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith("text/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(",")[1];
+          const idx = files.length + newFiles.length + 1;
+          const isImage = file.type.startsWith("image/");
+          newFiles.push({
+            id: `paste-${Date.now()}-${i}`,
+            data: base64,
+            filename: file.name || (isImage ? `pasted-image-${idx}.png` : `pasted-file-${idx}`),
+            label: isImage ? t("projects.imageLabel", { index: idx }) : (file.name || `文件${idx}`).replace(/\.\w+$/, ""),
+            isImage,
+          });
+          setFiles((prev) => [...prev, ...newFiles.splice(0)]);
+        };
+        reader.readAsDataURL(file);
+      }
     },
-    [images.length]
+    [files.length]
   );
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file, i) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const idx = images.length + i + 1;
-        setImages((prev) => [
-          ...prev,
-          {
-            id: `file-${Date.now()}-${i}`,
-            data: base64,
-            filename: file.name,
-            label: `图片${idx}`,
-          },
-        ]);
+  const handleFileSelect = async () => {
+    if (!projectPath) return;
+    const selected = await open({ multiple: true, directory: false });
+    if (!selected) return;
+    const paths = Array.isArray(selected) ? selected : [selected];
+
+    const newFiles: AttachedFile[] = paths.map((filePath, i) => {
+      const filename = filePath.replace(/\\/g, "/").split("/").pop() || "file";
+      const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
+      const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "ico"]);
+      const isImage = imageExts.has(ext);
+      const local = isInsideProject(filePath, projectPath);
+      const idx = files.length + i + 1;
+
+      return {
+        id: `file-${Date.now()}-${i}`,
+        data: local ? "" : "",  // will be filled below if needed
+        filename,
+        label: isImage ? t("projects.imageLabel", { index: idx }) : filename.replace(/\.\w+$/, ""),
+        isImage,
+        localPath: local ? filePath : undefined,
       };
-      reader.readAsDataURL(file);
     });
-    e.target.value = "";
+
+    // For external files, read base64 via backend command
+    for (let i = 0; i < newFiles.length; i++) {
+      if (!newFiles[i].localPath) {
+        try {
+          const base64 = await invokeCommand<string>("read_file_as_base64", { path: paths[i] });
+          newFiles[i].data = base64;
+        } catch {
+          newFiles[i].data = "";
+        }
+      }
+    }
+
+    setFiles((prev) => [...prev, ...newFiles]);
   };
 
   const handleLabelChange = (id: string, label: string) => {
-    setImages((prev) => prev.map((img) => (img.id === id ? { ...img, label } : img)));
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, label } : f)));
   };
 
-  const handleRemoveImage = (id: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== id));
+  const handleRemoveFile = (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const handleSend = async () => {
     if (!projectPath || sending) return;
-    if (!message.trim() && images.length === 0) return;
+    if (!message.trim() && files.length === 0) return;
 
     setSending(true);
     try {
       let fullMessage = message.trim();
 
-      if (images.length > 0) {
-        const inputImages = images.map((img) => ({
-          data: img.data,
-          filename: img.filename,
-          label: img.label || null,
-        }));
-        const saved = await invokeCommand<SavedImage[]>("save_session_images", {
-          projectPath,
-          images: inputImages,
-        });
-        const batchId = saved[0]?.batch_id ?? "unknown";
-        const imageLines = saved
-          .map((s) => `${s.label}（批次 ${s.batch_id}）: ${s.path}`)
-          .join("\n");
-        if (!fullMessage) {
-          fullMessage = t("projects.defaultImageMessage");
+      const localFiles = files.filter((f) => f.localPath && projectPath && isInsideProject(f.localPath, projectPath));
+      const externalPathFiles = files.filter((f) => f.localPath && !(projectPath && isInsideProject(f.localPath, projectPath!)));
+      const uploadFiles = files.filter((f) => !f.localPath);
+
+      if (localFiles.length > 0 || uploadFiles.length > 0) {
+        const allFileLines: string[] = [];
+
+        // Local project files: reference directly
+        for (const f of localFiles) {
+          allFileLines.push(`${f.label}: ${f.localPath}`);
         }
-        fullMessage += `\n\n<!--CLAUDE_HUB_IMAGES_BEGIN-->\n[用户在本次对话中上传了以下图片（批次 ${batchId}），请使用 Read 工具查看对应的文件路径：]\n${imageLines}\n<!--CLAUDE_HUB_IMAGES_END-->`;
+
+        // External files: copy to session_files
+        const filesToUpload = [...uploadFiles, ...externalPathFiles];
+        if (filesToUpload.length > 0) {
+          // Read base64 for external path files (from URI-list paste)
+          for (const f of externalPathFiles) {
+            if (!f.data && f.localPath) {
+              try {
+                f.data = await invokeCommand<string>("read_file_as_base64", { path: f.localPath });
+              } catch { f.data = ""; }
+            }
+          }
+          const inputFiles = filesToUpload.map((f) => ({
+            data: f.data,
+            filename: f.filename,
+            label: f.label || null,
+          }));
+          const saved = await invokeCommand<SavedFile[]>("save_session_files", {
+            projectPath,
+            files: inputFiles,
+          });
+          for (const s of saved) {
+            allFileLines.push(`${s.label}（批次 ${s.batch_id}）: ${s.path}`);
+          }
+        }
+
+        if (!fullMessage) {
+          fullMessage = t("projects.defaultFileMessage");
+        }
+        const fileListStr = allFileLines.join("\n");
+        fullMessage += `\n\n<!--CLAUDE_HUB_IMAGES_BEGIN-->\n[用户在本次对话中上传了以下文件，请使用 Read 工具查看对应的文件路径：]\n${fileListStr}\n<!--CLAUDE_HUB_IMAGES_END-->`;
       }
 
       const chatSession = await invokeCommand<{ session_id: string; process_id: number }>(
@@ -145,8 +231,6 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
       setActiveSessionId(chatSession.session_id);
       if (onMessageSent) onMessageSent(chatSession.session_id, fullMessage);
 
-      // Listen for result to clear our own sending state
-      // Stream display is handled by sessions-page's global listener
       const unlisten = await listen<StreamChunk>("chat-stream", (event) => {
         if (event.payload.session_id === chatSession.session_id && event.payload.event_type === "result") {
           setSending(false);
@@ -156,7 +240,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
       });
 
       setMessage("");
-      setImages([]);
+      setFiles([]);
     } catch (err) {
       console.error("Failed to send message:", err);
       setSending(false);
@@ -171,6 +255,49 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
     }
   };
 
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!projectPath || disabled || sending) return;
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length === 0) return;
+
+    const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "ico"]);
+    const newFiles: AttachedFile[] = droppedFiles.map((file, i) => {
+      const filename = file.name;
+      const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "";
+      const isImage = imageExts.has(ext) || file.type.startsWith("image/");
+      const idx = files.length + i + 1;
+      return {
+        id: `drop-${Date.now()}-${i}`,
+        data: "",
+        filename,
+        label: isImage ? t("projects.imageLabel", { index: idx }) : filename.replace(/\.\w+$/, ""),
+        isImage,
+      };
+    });
+
+    // Read base64 for each dropped file
+    for (let i = 0; i < droppedFiles.length; i++) {
+      const file = droppedFiles[i];
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = () => resolve("");
+        reader.readAsDataURL(file);
+      });
+      newFiles[i].data = base64;
+    }
+
+    setFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -180,9 +307,13 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
 
   return (
     <div className="px-4 pb-4 pt-2">
-      <div className="relative flex flex-col rounded-2xl border border-input bg-card shadow-sm focus-within:ring-1 focus-within:ring-ring focus-within:border-ring transition-shadow">
-        <ImagePreview images={images} onLabelChange={handleLabelChange} onRemove={handleRemoveImage} />
-        
+      <div
+        className="relative flex flex-col rounded-2xl border border-input bg-card shadow-sm focus-within:ring-1 focus-within:ring-ring focus-within:border-ring transition-shadow"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
+        <FilePreview files={files} onLabelChange={handleLabelChange} onRemove={handleRemoveFile} />
+
         <textarea
           ref={textareaRef}
           value={message}
@@ -202,21 +333,12 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
         />
 
         <div className="flex items-center justify-between px-3 pb-3 pt-1">
-          {/* Left Side: Tools/Attachments */}
           <div className="flex items-center gap-1">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileSelect}
-            />
             <Button
               variant="ghost"
               size="icon-sm"
               className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleFileSelect}
               disabled={disabled || sending}
               title={t("sessions.attachImage")}
             >
@@ -224,7 +346,6 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
             </Button>
           </div>
 
-          {/* Right Side: Send/Abort */}
           <div className="flex items-center gap-1">
             {sending ? (
               <Button variant="destructive" size="icon-sm" className="h-8 w-8 rounded-full" onClick={handleAbort}>
@@ -232,16 +353,16 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
               </Button>
             ) : (
               <Button
-                variant={(message.trim() || images.length > 0) ? "default" : "secondary"}
+                variant={(message.trim() || files.length > 0) ? "default" : "secondary"}
                 size="icon-sm"
                 className={`h-8 w-8 rounded-full transition-all ${
-                  (message.trim() || images.length > 0) 
-                    ? "bg-[var(--icon-send-bg)] text-[var(--icon-send-fg)] shadow-sm hover:opacity-90" 
+                  (message.trim() || files.length > 0)
+                    ? "bg-[var(--icon-send-bg)] text-[var(--icon-send-fg)] shadow-sm hover:opacity-90"
                     : "text-muted-foreground opacity-50"
                 }`}
-                style={(message.trim() || images.length > 0) ? { backgroundColor: 'var(--icon-send-bg)', color: 'var(--icon-send-fg)' } : undefined}
+                style={(message.trim() || files.length > 0) ? { backgroundColor: 'var(--icon-send-bg)', color: 'var(--icon-send-fg)' } : undefined}
                 onClick={handleSend}
-                disabled={disabled || (!message.trim() && images.length === 0)}
+                disabled={disabled || (!message.trim() && files.length === 0)}
               >
                 <Send className="h-4 w-4 ml-[2px]" />
               </Button>

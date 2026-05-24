@@ -189,13 +189,13 @@ export interface StreamChunk {
   data: Record<string, unknown>;
 }
 
-export interface InputImage {
+export interface InputFile {
   data: string;
   filename: string;
   label: string | null;
 }
 
-export interface SavedImage {
+export interface SavedFile {
   path: string;
   label: string;
   index: number;
