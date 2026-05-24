@@ -67,6 +67,10 @@
   --icon-avatar-bot-bg: var(--color-muted);
   --icon-avatar-user: var(--color-muted-foreground);
   --icon-avatar-user-bg: var(--color-muted);
+  --icon-config: var(--color-muted-foreground);
+  --icon-theme: var(--color-muted-foreground);
+  --icon-about: var(--color-muted-foreground);
+  --icon-pin: var(--color-muted-foreground);
 }
 
 /* === Colorful theme === */
@@ -79,6 +83,10 @@
   --icon-avatar-bot-bg: #d1fae5;
   --icon-avatar-user: #2563eb;
   --icon-avatar-user-bg: #dbeafe;
+  --icon-config: #8b5cf6;
+  --icon-theme: #f97316;
+  --icon-about: #06b6d4;
+  --icon-pin: #ef4444;
 }
 
 /* === Dark theme === */
@@ -117,6 +125,10 @@
   --icon-avatar-bot-bg: hsl(160 50% 15%);
   --icon-avatar-user: #60a5fa;
   --icon-avatar-user-bg: hsl(217 50% 15%);
+  --icon-config: #a78bfa;
+  --icon-theme: #fb923c;
+  --icon-about: #22d3ee;
+  --icon-pin: #f87171;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
