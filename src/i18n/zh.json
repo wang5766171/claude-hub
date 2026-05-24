@@ -253,5 +253,10 @@
     "notesPlaceholder": "输入备注",
     "addMetaHint": "点击编辑按钮添加自定义名称、标签或备注",
     "matcher": "匹配器"
+  },
+  "about": {
+    "title": "关于",
+    "pin": "置顶",
+    "unpin": "取消置顶"
   }
 }

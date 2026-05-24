@@ -253,5 +253,10 @@
     "notesPlaceholder": "Enter notes",
     "addMetaHint": "Click edit to add a custom name, tags, or notes",
     "matcher": "Matcher"
+  },
+  "about": {
+    "title": "About",
+    "pin": "Pin",
+    "unpin": "Unpin"
   }
 }

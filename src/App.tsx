@@ -3,10 +3,12 @@ import { ChatPage } from "@/pages/chat-page";
 import { ManagePage } from "@/pages/manage-page";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
-import { Pin, PinOff, Settings, Sun, Palette, Moon } from "lucide-react";
+import { Pin, PinOff, Settings, Sun, Palette, Moon, Info } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { Github } from "@/components/icons/github";
+import { Gitee } from "@/components/icons/gitee";
 import { getVersion } from "@tauri-apps/api/app";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme, type Theme } from "@/hooks/use-theme";
 import type { Page, Project } from "@/types";
@@ -34,12 +36,27 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
   const { t } = useTranslation();
   const [pinned, setPinned] = useState(false);
   const [version, setVersion] = useState("");
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [aboutHovered, setAboutHovered] = useState(false);
   const { theme, setTheme } = useTheme();
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const aboutTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     invokeCommand<boolean>("load_always_on_top").then(setPinned).catch(console.error);
     getVersion().then((v) => setVersion(v)).catch(() => setVersion(""));
   }, []);
+
+  useEffect(() => {
+    if (!aboutOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (aboutRef.current && !aboutRef.current.contains(e.target as Node)) {
+        setAboutOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [aboutOpen]);
 
   const handleToggle = async () => {
     try {
@@ -55,15 +72,20 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
     setTheme(themeOrder[(idx + 1) % themeOrder.length]);
   };
 
+  const scheduleAboutClose = () => {
+    aboutTimerRef.current = setTimeout(() => {
+      if (!aboutHovered) setAboutOpen(false);
+    }, 150);
+  };
+  const cancelAboutClose = () => {
+    if (aboutTimerRef.current) clearTimeout(aboutTimerRef.current);
+    setAboutHovered(true);
+  };
+
   const { icon: ThemeIcon, label: themeLabel } = themeConfig[theme];
 
   return (
-    <div className="flex items-center h-10 border-b border-border/30 px-4" data-tauri-drag-region style={{ background: "var(--color-layer-0)" }}>
-      <div className="flex items-center gap-2 flex-1" data-tauri-drag-region>
-        <img src={logo} alt="Jishu Hub" className="h-5 w-5 rounded" />
-        <span className="text-sm font-semibold" data-tauri-drag-region>Jishu Hub</span>
-        {version && <span className="text-[10px] text-muted-foreground/50 font-mono">v{version}</span>}
-      </div>
+    <div className="flex items-center h-10 border-b border-border/30 px-3" data-tauri-drag-region style={{ background: "var(--color-layer-0)" }}>
       <div className="flex items-center gap-1">
         <button
           onClick={disabled ? undefined : () => onNavigate(currentPage === "chat" ? "manage" : "chat")}
@@ -75,27 +97,73 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
               : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
           )}
         >
-          <Settings className="h-3.5 w-3.5 text-[var(--icon-action)]" />
+          <Settings className="h-3.5 w-3.5 text-[var(--icon-config)]" />
           <span>{currentPage === "manage" ? t("sessions.title") : t("nav.config")}</span>
         </button>
         <button
           onClick={cycleTheme}
-          className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/30 transition-fast text-muted-foreground hover:text-foreground"
+          className="h-7 px-3 rounded-lg flex items-center gap-1.5 text-xs transition-fast text-muted-foreground hover:bg-accent/30 hover:text-foreground"
           title={themeLabel}
         >
-          <ThemeIcon className="h-3.5 w-3.5" />
+          <ThemeIcon className="h-3.5 w-3.5 text-[var(--icon-theme)]" />
+          <span>{themeLabel}</span>
         </button>
+        <div className="relative" ref={aboutRef}>
+          <button
+            onClick={() => setAboutOpen(!aboutOpen)}
+            onMouseLeave={aboutOpen ? scheduleAboutClose : undefined}
+            className={cn(
+              "h-7 px-3 rounded-lg flex items-center gap-1.5 text-xs transition-fast text-muted-foreground hover:bg-accent/30 hover:text-foreground",
+              aboutOpen && "bg-accent/30 text-foreground"
+            )}
+            title={t("about.title")}
+          >
+            <Info className="h-3.5 w-3.5 text-[var(--icon-about)]" />
+            <span>{t("about.title")}</span>
+          </button>
+          {aboutOpen && (
+            <div
+              className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-border bg-card shadow-lg z-50 p-4"
+              onMouseEnter={cancelAboutClose}
+              onMouseLeave={() => { setAboutHovered(false); setAboutOpen(false); }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <img src={logo} alt="" className="h-6 w-6 rounded" />
+                <span className="text-sm font-semibold">Jishu Hub</span>
+                {version && <span className="text-[11px] text-muted-foreground font-mono">v{version}</span>}
+              </div>
+              <div className="flex flex-col gap-1.5 mt-3">
+                <button
+                  onClick={() => invokeCommand("open_url", { url: "https://github.com/wang5766171/jishu-hub" }).catch(console.error)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-fast w-full"
+                >
+                  <Github className="h-3.5 w-3.5 text-[var(--icon-config)]" />
+                  <span>GitHub</span>
+                </button>
+                <button
+                  onClick={() => invokeCommand("open_url", { url: "https://gitee.com/wangzwa/claude-hub" }).catch(console.error)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-fast w-full"
+                >
+                  <Gitee className="h-3.5 w-3.5 text-[var(--icon-about)]" />
+                  <span>Gitee</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <button
           onClick={handleToggle}
           className={cn(
-            "h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/30 transition-fast",
-            pinned && "text-primary"
+            "h-7 px-3 rounded-lg flex items-center gap-1.5 text-xs transition-fast",
+            pinned ? "text-primary" : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
           )}
           title={pinned ? "取消置顶" : "置顶窗口"}
         >
-          {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          {pinned ? <PinOff className="h-3.5 w-3.5 text-[var(--icon-pin)]" /> : <Pin className="h-3.5 w-3.5 text-[var(--icon-pin)]" />}
+          <span>{pinned ? t("about.unpin") : t("about.pin")}</span>
         </button>
       </div>
+      <div className="flex-1" data-tauri-drag-region />
     </div>
   );
 }
