@@ -302,6 +302,13 @@ fn list_config_templates(state: tauri::State<'_, Mutex<AppState>>) -> Vec<hub::C
     s.registry.active().config_templates()
 }
 
+#[tauri::command]
+fn get_app_dir() -> Result<String, String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe.parent().ok_or("No parent dir")?;
+    Ok(dir.to_string_lossy().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -369,6 +376,7 @@ pub fn run() {
             get_project_merges,
             get_merged_secondaries,
             list_config_templates,
+            get_app_dir,
             chat::send_message,
             chat::abort_chat,
             image::save_session_images,

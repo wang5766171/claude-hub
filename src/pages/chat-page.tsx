@@ -119,6 +119,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const [msgSearchSeed, setMsgSearchSeed] = useState("");
   const [viewingProject, setViewingProject] = useState<string | null>(null);
+  const [newChatPath, setNewChatPath] = useState<string | null>(null);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
   const visitedSessions = useRef(new Set<string>());
@@ -148,6 +149,8 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     const targetProject = projectName || selectedProject;
     if (!targetProject) return;
 
+    setNewChatPath(null);
+
     if (selectedSession && messageAreaRef.current) {
       scrollMemory.current.set(selectedSession, messageAreaRef.current.scrollTop);
     }
@@ -175,12 +178,27 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   };
 
   const handleNewSession = async () => {
-    const project = projects?.find((p) => p.encoded_name === selectedProject);
-    if (!project) return;
+    setSelectedSession(null);
+    setSessionMessages([]);
+    setStreamChunks([]);
+    setStreamComplete(false);
+    setStreamingSession(null);
+    setPendingUserMessage(null);
+    setMsgSearchSeed("");
+
+    if (viewingProject) {
+      const project = projects?.find((p) => p.encoded_name === viewingProject);
+      if (project) {
+        setNewChatPath(null);
+        return;
+      }
+    }
+
     try {
-      await invokeCommand<number>("open_in_terminal", { projectPath: project.path });
+      const appDir = await invokeCommand<string>("get_app_dir");
+      setNewChatPath(appDir);
     } catch (err) {
-      console.error("Failed to start new session:", err);
+      console.error("Failed to get app dir:", err);
     }
   };
 
@@ -453,7 +471,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
 
       {/* Right: Chat area */}
       <div className="flex-1 flex flex-col min-w-0 bg-background">
-        {!selectedSession && !streamingActive ? (
+        {!selectedSession && !streamingActive && !newChatPath ? (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
             <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
               <MessageSquare className="h-7 w-7 text-[var(--icon-message)]" />
@@ -506,10 +524,10 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           </>
         )}
         {/* Chat input */}
-        {viewingProject && (
+        {(viewingProject || newChatPath) && (
           <ChatInput
             sessionId={selectedSession}
-            projectPath={projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null}
+            projectPath={viewingProject ? (projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null) : newChatPath}
             onMessageSent={handleMessageSent}
           />
         )}
