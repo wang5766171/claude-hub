@@ -374,6 +374,8 @@ export function ChatPage({
           if (messageAreaRef.current) {
             messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
           }
+          // Refocus input after assistant finishes responding
+          chatInputRef.current?.focus();
         });
 
         setTimeout(() => { refetchNames(true); }, 2000);
