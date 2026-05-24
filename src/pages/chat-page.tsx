@@ -62,7 +62,7 @@ export function ChatPage({
   currentProject: Project | null;
   onRefresh: () => Promise<number>;
   sessionNames: Record<string, string> | null;
-  refetchNames: () => Promise<Record<string, string>>;
+  refetchNames: (silent?: boolean) => Promise<Record<string, string>>;
   onSwitchProject: () => void;
 }) {
   const { t } = useTranslation();
@@ -376,7 +376,7 @@ export function ChatPage({
           }
         });
 
-        setTimeout(() => { refetchNames(); }, 2000);
+        setTimeout(() => { refetchNames(true); }, 2000);
       }
     }).then((fn) => {
       if (cancelled) {
