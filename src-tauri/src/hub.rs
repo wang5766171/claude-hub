@@ -65,6 +65,7 @@ pub struct AppState {
     pub last_project: Option<String>,
     pub language: Option<String>,
     pub always_on_top: Option<bool>,
+    pub theme: Option<String>,
 }
 
 fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {

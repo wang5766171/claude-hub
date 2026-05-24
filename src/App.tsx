@@ -102,8 +102,8 @@ function App() {
     <div className="flex flex-col h-screen bg-background">
       <TitleBar currentPage={currentPage} onNavigate={setCurrentPage} />
       <div className="flex-1 overflow-hidden">
-        <div className={currentPage !== "chat" ? "hidden" : ""}><ChatPage onOpenManage={() => setCurrentPage("manage")} /></div>
-        <div className={currentPage !== "manage" ? "hidden" : ""}><ManagePage onBack={() => setCurrentPage("chat")} onViewSessions={navigateToSession} /></div>
+        <div className={cn("h-full", currentPage !== "chat" && "hidden")}><ChatPage onOpenManage={() => setCurrentPage("manage")} /></div>
+        <div className={cn("h-full", currentPage !== "manage" && "hidden")}><ManagePage onBack={() => setCurrentPage("chat")} onViewSessions={navigateToSession} /></div>
       </div>
       <div className="h-6 flex items-center px-4 text-[10px] text-muted-foreground/50 border-t border-border/30" data-tauri-drag-region>
         <span>{projects?.length ?? 0} projects</span>

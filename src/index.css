@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   /* macOS HIG Design Tokens */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -57,6 +57,81 @@
   /* Typography */
   --font-sans: "SF Pro Display", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "SF Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+
+  /* Icon semantic colors (light mode: no color) */
+  --icon-search: var(--color-muted-foreground);
+  --icon-action: var(--color-muted-foreground);
+  --icon-folder: var(--color-muted-foreground);
+  --icon-message: var(--color-muted-foreground);
+  --icon-avatar-bot: var(--color-muted-foreground);
+  --icon-avatar-bot-bg: var(--color-muted);
+  --icon-avatar-user: var(--color-muted-foreground);
+  --icon-avatar-user-bg: var(--color-muted);
+}
+
+/* === Colorful theme === */
+[data-theme="colorful"] {
+  --icon-search: #3b82f6;
+  --icon-action: #3b82f6;
+  --icon-folder: #f59e0b;
+  --icon-message: #10b981;
+  --icon-avatar-bot: #059669;
+  --icon-avatar-bot-bg: #d1fae5;
+  --icon-avatar-user: #2563eb;
+  --icon-avatar-user-bg: #dbeafe;
+}
+
+/* === Dark theme === */
+[data-theme="dark"] {
+  --color-background: hsl(240 6% 10%);
+  --color-foreground: hsl(0 0% 95%);
+  --color-card: hsl(240 6% 13%);
+  --color-card-foreground: hsl(0 0% 95%);
+  --color-popover: hsl(240 6% 13%);
+  --color-popover-foreground: hsl(0 0% 95%);
+  --color-primary: hsl(0 0% 95%);
+  --color-primary-foreground: hsl(240 6% 10%);
+  --color-secondary: hsl(240 5% 18%);
+  --color-secondary-foreground: hsl(0 0% 95%);
+  --color-muted: hsl(240 5% 18%);
+  --color-muted-foreground: hsl(240 5% 65%);
+  --color-accent: hsl(240 5% 18%);
+  --color-accent-foreground: hsl(0 0% 95%);
+  --color-destructive: hsl(0 63% 55%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(240 5% 22%);
+  --color-input: hsl(240 5% 22%);
+  --color-ring: hsl(240 5% 65%);
+
+  --color-layer-0: hsl(240 6% 7%);
+  --color-layer-1: hsl(240 6% 11%);
+  --color-layer-2: hsl(240 6% 14%);
+  --color-layer-3: hsl(240 6% 17%);
+  --color-layer-4: hsl(240 6% 10%);
+
+  --icon-search: #60a5fa;
+  --icon-action: #60a5fa;
+  --icon-folder: #fbbf24;
+  --icon-message: #34d399;
+  --icon-avatar-bot: #34d399;
+  --icon-avatar-bot-bg: hsl(160 50% 15%);
+  --icon-avatar-user: #60a5fa;
+  --icon-avatar-user-bg: hsl(217 50% 15%);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: hsl(240 5% 40% / 0.4);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 5% 40% / 0.6);
+}
+
+[data-theme="dark"] .markdown-prose pre {
+  background: hsl(220 13% 16%);
+  color: hsl(220 14% 82%);
+}
+[data-theme="dark"] .markdown-prose code:not(pre code) {
+  background: hsl(240 5% 18%);
 }
 
 @layer base {

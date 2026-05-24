@@ -160,6 +160,19 @@ fn toggle_always_on_top(app: tauri::AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn load_theme() -> Result<String, String> {
+    let state = hub::load_state().map_err(|e| e.to_string())?;
+    Ok(state.theme.unwrap_or_else(|| "colorful".to_string()))
+}
+
+#[tauri::command]
+fn save_theme(theme: String) -> Result<(), String> {
+    let mut state = hub::load_state().map_err(|e| e.to_string())?;
+    state.theme = Some(theme);
+    hub::save_state(&state).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn list_custom_commands() -> Result<Vec<command::CustomCommand>, String> {
     command::list_custom_commands().map_err(|e| e.to_string())
 }
@@ -331,6 +344,8 @@ pub fn run() {
             save_language,
             load_always_on_top,
             toggle_always_on_top,
+            load_theme,
+            save_theme,
             list_custom_commands,
             save_custom_command,
             delete_custom_command,

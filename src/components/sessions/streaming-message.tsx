@@ -112,7 +112,7 @@ export const StreamingMessage = memo(function StreamingMessage({ chunks, isCompl
               {stripImagePrompt(userMessage)}
             </div>
           </div>
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-user-bg)] text-[var(--icon-avatar-user)] mt-5">
             <User className="h-3.5 w-3.5" />
           </div>
         </div>
@@ -120,7 +120,7 @@ export const StreamingMessage = memo(function StreamingMessage({ chunks, isCompl
 
       {/* Assistant streaming response */}
       <div className="flex gap-2.5 w-full justify-start">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-bot-bg)] text-[var(--icon-avatar-bot)] mt-5">
           <Bot className="h-3.5 w-3.5" />
         </div>
         <div className="max-w-[85%] min-w-0 flex flex-col">

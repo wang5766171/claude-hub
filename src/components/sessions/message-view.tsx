@@ -322,7 +322,7 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
         )}
       >
         {!isUser && (
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-bot-bg)] text-[var(--icon-avatar-bot)] mt-5">
             <Bot className="h-3.5 w-3.5" />
           </div>
         )}
@@ -349,7 +349,7 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
           <CopyButton text={extractMessageText(msg)} />
         </div>
         {isUser && (
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-user-bg)] text-[var(--icon-avatar-user)] mt-5">
             <User className="h-3.5 w-3.5" />
           </div>
         )}
@@ -400,7 +400,7 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
       <>
         <div className="sticky top-0 z-10 border-b border-border/30 px-4 py-2 flex items-center gap-2" style={{ background: "var(--color-layer-4)" }}>
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--icon-search)]" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

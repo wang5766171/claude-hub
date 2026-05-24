@@ -13,11 +13,11 @@ interface ManagePageProps {
   onViewSessions: (encodedName: string) => void;
 }
 
-const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string }[] = [
-  { id: "projects", icon: FolderOpen, labelKey: "nav.projects" },
-  { id: "config", icon: Settings, labelKey: "nav.config" },
-  { id: "commands", icon: Rocket, labelKey: "nav.commands" },
-  { id: "backups", icon: Archive, labelKey: "config.backups" },
+const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string; iconColor: string }[] = [
+  { id: "projects", icon: FolderOpen, labelKey: "nav.projects", iconColor: "text-[var(--icon-folder)]" },
+  { id: "config", icon: Settings, labelKey: "nav.config", iconColor: "text-[var(--icon-action)]" },
+  { id: "commands", icon: Rocket, labelKey: "nav.commands", iconColor: "text-[var(--icon-action)]" },
+  { id: "backups", icon: Archive, labelKey: "config.backups", iconColor: "text-[var(--icon-folder)]" },
 ];
 
 export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
@@ -27,7 +27,7 @@ export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
   return (
     <div className="flex h-full">
       {/* Left: Tab navigation */}
-      <div className="w-16 flex flex-col items-center border-r border-border/30 py-4 gap-1" style={{ background: "var(--color-material-sidebar)", backdropFilter: "blur(20px)" }}>
+      <div className="w-16 flex flex-col items-center border-r border-border/30 py-4 gap-1" style={{ background: "var(--color-layer-1)" }}>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -37,7 +37,7 @@ export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        {tabs.map(({ id, icon: Icon, labelKey }) => (
+        {tabs.map(({ id, icon: Icon, labelKey, iconColor }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -49,7 +49,7 @@ export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
             )}
             title={t(labelKey)}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={cn("h-4 w-4", activeTab !== id && iconColor)} />
             <span className="truncate w-full text-center">{t(labelKey)}</span>
           </button>
         ))}

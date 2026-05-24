@@ -7,13 +7,23 @@ import { StreamingMessage } from "@/components/sessions/streaming-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  MessageSquare, Search, ChevronLeft, ChevronRight, Plus, X, Pencil,
-  ChevronDown, ChevronRight as ChevRight, FolderOpen, Settings,
+  MessageSquare, Search, X, Pencil,
+  ChevronDown, ChevronRight as ChevRight, FolderOpen, SquarePen, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { cn } from "@/lib/utils";
 import type { Session, Project, Message, ContentBlock, StreamChunk } from "@/types";
+
+function TerminalIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="2" y="3" width="20" height="18" rx="3" />
+      <polyline points="7 10 10 13 7 16" />
+      <line x1="13" y1="16" x2="17" y2="16" />
+    </svg>
+  );
+}
 
 function formatRelativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -74,7 +84,7 @@ function ProjectSessionGroup({
                 : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
             )}
           >
-            <MessageSquare className="h-3 w-3 shrink-0 opacity-50" />
+            <MessageSquare className="h-3 w-3 shrink-0 text-[var(--icon-message)]" />
             <span className="truncate flex-1 text-left min-w-0">{name}</span>
             {timeStr && (
               <span className={cn(
@@ -89,7 +99,7 @@ function ProjectSessionGroup({
   );
 }
 
-export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
+export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => void }) {
   const { t } = useTranslation();
   const { data: projects, loading: projectsLoading } = useInvoke<Project[]>("scan_projects");
   const { data: sessionNames, refetch: refetchNames } = useInvoke<Record<string, string>>("get_session_names");
@@ -325,7 +335,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
       {/* Left sidebar: Session tree */}
       <div
         className={cn(
-          "flex flex-col transition-all duration-300 ease-out shrink-0",
+          "flex flex-col shrink-0",
           sidebarCollapsed ? "w-14" : "w-[240px]"
         )}
         style={{
@@ -336,134 +346,134 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
           zIndex: 11,
         }}
       >
-        {/* Sidebar header */}
-        <div className="flex items-center gap-2 px-3 h-[44px]" style={{ background: "var(--color-layer-1)" }}>
-          {!sidebarCollapsed && (
-            <>
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setActiveSearchQuery(e.target.value);
-                    setMsgSearchSeed(e.target.value);
-                  }}
-                  placeholder={t("sessions.searchAll")}
-                  className="h-8 pl-8 pr-7 text-sm rounded-lg border-border/40"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(""); setActiveSearchQuery(""); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-fast"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={handleNewSession}
-                title={t("sessions.newSession")}
-                className="shrink-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+        {/* Sidebar header: expanded */}
+        <div className={cn("flex flex-col", sidebarCollapsed && "hidden")} style={{ background: "var(--color-layer-1)" }}>
+          <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+            <button
+              onClick={handleNewSession}
+              title={t("sessions.newSession")}
+              className="flex-1 flex items-center gap-2 h-8 px-2.5 rounded-lg hover:bg-accent transition-fast text-sm"
+            >
+              <SquarePen className="h-3.5 w-3.5 shrink-0 text-[var(--icon-action)]" />
+              <span className="truncate">发起新对话</span>
+            </button>
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--icon-search)]" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setActiveSearchQuery(e.target.value);
+                  setMsgSearchSeed(e.target.value);
+                }}
+                placeholder={t("sessions.searchAll")}
+                className="h-8 pl-8 pr-7 text-sm rounded-lg border-border/40"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(""); setActiveSearchQuery(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-fast"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar header: collapsed */}
+        <div className={cn("flex items-center justify-center h-[36px]", !sidebarCollapsed && "hidden")}>
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
+            onClick={() => setSidebarCollapsed(false)}
+            className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
           >
-            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            <PanelLeftOpen className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Session tree */}
-        <div className="flex-1 overflow-y-auto">
-          {!sidebarCollapsed ? (
-            <>
-              {projects?.map((project) => {
-                if (project.session_count === 0) return null;
-                const isCollapsed = collapsedProjects.has(project.encoded_name);
-                return (
-                  <div key={project.encoded_name}>
-                    <button
-                      onClick={() => {
-                        toggleProjectCollapse(project.encoded_name);
-                      }}
-                      className={cn(
-                        "flex w-full items-center gap-1.5 px-3 py-1.5 transition-fast rounded-none",
-                        "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {isCollapsed ? (
-                        <ChevRight className="h-3.5 w-3.5 shrink-0" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-                      )}
-                      <FolderOpen className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                      <span className="truncate text-[13px] font-medium">{project.name}</span>
-                      <span className="text-[10px] text-muted-foreground/60 ml-auto shrink-0">{project.session_count}</span>
-                    </button>
-                    <ProjectSessionGroup
-                      project={project}
-                      isCollapsed={isCollapsed}
-                      selectedSessionId={selectedSession}
-                      sessionNames={sessionNames}
-                      onSelectSession={handleSelectSession}
-                    />
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            /* Collapsed: show project first letters */
-            <div className="flex flex-col items-center gap-1 py-2">
-              {projects?.filter(p => p.session_count > 0).map((project) => (
+        {/* Session tree: expanded */}
+        <div className={cn("flex-1 overflow-y-auto", sidebarCollapsed && "hidden")}>
+          {projects?.map((project) => {
+            if (project.session_count === 0) return null;
+            const isCollapsed = collapsedProjects.has(project.encoded_name);
+            return (
+              <div key={project.encoded_name}>
                 <button
-                  key={project.encoded_name}
                   onClick={() => {
-                    setSidebarCollapsed(false);
-                    setSelectedProject(project.encoded_name);
-                    setCollapsedProjects(prev => {
-                      const next = new Set(prev);
-                      next.delete(project.encoded_name);
-                      return next;
-                    });
+                    toggleProjectCollapse(project.encoded_name);
                   }}
                   className={cn(
-                    "h-8 w-8 rounded-lg flex items-center justify-center text-xs font-medium transition-fast",
-                    selectedProject === project.encoded_name
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent/30"
+                    "flex w-full items-center gap-1.5 px-3 py-1.5 transition-fast rounded-none",
+                    "text-muted-foreground hover:text-foreground"
                   )}
-                  title={project.name}
                 >
-                  {project.name.charAt(0).toUpperCase()}
+                  {isCollapsed ? (
+                    <ChevRight className="h-3.5 w-3.5 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--icon-folder)]" />
+                  <span className="truncate text-[13px] font-medium">{project.name}</span>
+                  <span className="text-[10px] text-muted-foreground/60 ml-auto shrink-0">{project.session_count}</span>
                 </button>
-              ))}
-            </div>
-          )}
+                <ProjectSessionGroup
+                  project={project}
+                  isCollapsed={isCollapsed}
+                  selectedSessionId={selectedSession}
+                  sessionNames={sessionNames}
+                  onSelectSession={handleSelectSession}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Session tree: collapsed */}
+        <div className={cn("flex-1 overflow-y-auto", !sidebarCollapsed && "hidden")}>
+          <div className="flex flex-col items-center gap-1 py-2">
+            {projects?.filter(p => p.session_count > 0).map((project) => (
+              <button
+                key={project.encoded_name}
+                onClick={() => {
+                  setSidebarCollapsed(false);
+                  setSelectedProject(project.encoded_name);
+                  setCollapsedProjects(prev => {
+                    const next = new Set(prev);
+                    next.delete(project.encoded_name);
+                    return next;
+                  });
+                }}
+                className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center text-xs font-medium transition-fast",
+                  selectedProject === project.encoded_name
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/30"
+                )}
+                title={project.name}
+              >
+                {project.name.charAt(0).toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Right: Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
         {!selectedSession && !streamingActive ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-accent/30 flex items-center justify-center">
-              <MessageSquare className="h-8 w-8 opacity-40" />
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+            <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
+              <MessageSquare className="h-7 w-7 text-[var(--icon-message)]" />
             </div>
-            <div className="text-center">
-              <p className="text-sm">{t("sessions.selectSession")}</p>
-              <p className="text-xs mt-1 opacity-60">{t("sessions.selectProject")}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={onOpenManage} className="mt-2">
-              <Settings className="h-3.5 w-3.5 mr-1.5" />
-              {t("nav.projects")}
-            </Button>
+            <p className="text-sm">{t("sessions.selectSession")}</p>
           </div>
         ) : (
           <>
@@ -480,12 +490,11 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
                     size="icon-xs"
                     onClick={() => handleResumeSession(selectedSession)}
                     disabled={loadingSessionId === selectedSession}
-                    title={t("sessions.resuming")}
-                    className="text-muted-foreground hover:text-foreground"
+                    title={t("sessions.openTerminal")}
                   >
-                    <FolderOpen className="h-3.5 w-3.5" />
+                    <TerminalIcon className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon-xs" onClick={() => setRenameOpen(true)}>
+                  <Button variant="ghost" size="icon-xs" onClick={() => setRenameOpen(true)} title={t("sessions.rename")}>
                     <Pencil className="h-3 w-3" />
                   </Button>
                 </div>

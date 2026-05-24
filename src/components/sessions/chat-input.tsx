@@ -178,7 +178,7 @@ export function ChatInput({
   return (
     <div className="border-t border-border">
       <ImagePreview images={images} onLabelChange={handleLabelChange} onRemove={handleRemoveImage} />
-      <div className="flex items-end gap-2 p-3">
+      <div className="flex items-center gap-2 p-3">
         <input
           ref={fileInputRef}
           type="file"
@@ -194,7 +194,7 @@ export function ChatInput({
           disabled={disabled || sending}
           title={t("sessions.attachImage")}
         >
-          <Paperclip className="h-4 w-4" />
+          <Paperclip className="h-4 w-4 text-[var(--icon-action)]" />
         </Button>
         <textarea
           value={message}
@@ -213,16 +213,17 @@ export function ChatInput({
           }}
         />
         {sending ? (
-          <Button variant="destructive" size="icon-xs" onClick={handleAbort}>
-            <Square className="h-3.5 w-3.5" />
+          <Button variant="destructive" size="icon-sm" onClick={handleAbort}>
+            <Square className="h-4 w-4" />
           </Button>
         ) : (
           <Button
-            size="icon-xs"
+            variant="ghost"
+            size="icon-sm"
             onClick={handleSend}
             disabled={disabled || (!message.trim() && images.length === 0)}
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-4 w-4 text-[var(--icon-action)]" />
           </Button>
         )}
       </div>
