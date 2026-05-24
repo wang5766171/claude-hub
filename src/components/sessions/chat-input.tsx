@@ -179,26 +179,10 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
   };
 
   return (
-    <div className="border-t border-border">
-      <ImagePreview images={images} onLabelChange={handleLabelChange} onRemove={handleRemoveImage} />
-      <div className="flex items-center gap-2 p-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleFileSelect}
-        />
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || sending}
-          title={t("sessions.attachImage")}
-        >
-          <Paperclip className="h-4 w-4 text-[var(--icon-action)]" />
-        </Button>
+    <div className="px-4 pb-4 pt-2">
+      <div className="relative flex flex-col rounded-2xl border border-input bg-card shadow-sm focus-within:ring-1 focus-within:ring-ring focus-within:border-ring transition-shadow">
+        <ImagePreview images={images} onLabelChange={handleLabelChange} onRemove={handleRemoveImage} />
+        
         <textarea
           ref={textareaRef}
           value={message}
@@ -208,28 +192,61 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[36px] max-h-[120px]"
+          className="w-full resize-none bg-transparent px-4 py-3 text-sm focus:outline-none min-h-[52px] max-h-[200px]"
           style={{ height: "auto", overflow: "hidden" }}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
             target.style.height = "auto";
-            target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            target.style.height = Math.min(target.scrollHeight, 200) + "px";
           }}
         />
-        {sending ? (
-          <Button variant="destructive" size="icon-sm" onClick={handleAbort}>
-            <Square className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleSend}
-            disabled={disabled || (!message.trim() && images.length === 0)}
-          >
-            <Send className="h-4 w-4 text-[var(--icon-action)]" />
-          </Button>
-        )}
+
+        <div className="flex items-center justify-between px-3 pb-3 pt-1">
+          {/* Left Side: Tools/Attachments */}
+          <div className="flex items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || sending}
+              title={t("sessions.attachImage")}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Right Side: Send/Abort */}
+          <div className="flex items-center gap-1">
+            {sending ? (
+              <Button variant="destructive" size="icon-sm" className="h-8 w-8 rounded-full" onClick={handleAbort}>
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant={(message.trim() || images.length > 0) ? "default" : "secondary"}
+                size="icon-sm"
+                className={`h-8 w-8 rounded-full transition-all ${
+                  (message.trim() || images.length > 0) 
+                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    : "text-muted-foreground opacity-50"
+                }`}
+                onClick={handleSend}
+                disabled={disabled || (!message.trim() && images.length === 0)}
+              >
+                <Send className="h-4 w-4 ml-[2px]" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
