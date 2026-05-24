@@ -426,8 +426,8 @@ export function ChatPage({
         <div className={cn("flex flex-col", sidebarCollapsed && "hidden")} style={{ background: "var(--color-layer-1)" }}>
           {/* Project card */}
           {currentProject ? (
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
-              <FolderOpen className="h-5 w-5 shrink-0 ml-0.5 text-[var(--icon-folder)]" />
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-border/20">
+              <FolderOpen className="h-5 w-5 shrink-0 ml-2 text-[var(--icon-folder)]" />
               <span className="truncate text-sm font-semibold text-foreground flex-1 min-w-0 leading-none pt-[1px]" title={currentProject.name}>{currentProject.name}</span>
               <button
                 onClick={onSwitchProject}
@@ -439,8 +439,8 @@ export function ChatPage({
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
-              <FolderOpen className="h-5 w-5 shrink-0 ml-0.5 text-muted-foreground/40" />
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-border/20">
+              <FolderOpen className="h-5 w-5 shrink-0 ml-2 text-muted-foreground/40" />
               <span className="text-sm font-semibold text-muted-foreground leading-none pt-[1px]">{t("sessions.noProject")}</span>
               <button
                 onClick={onSwitchProject}
@@ -457,7 +457,7 @@ export function ChatPage({
               onClick={projectId ? handleNewSession : undefined}
               title={projectId ? t("sessions.newSession") : t("sessions.selectProject")}
               className={cn(
-                "flex-1 flex items-center gap-2 h-8 pl-1.5 pr-2 rounded-lg transition-fast text-sm text-foreground",
+                "flex-1 flex items-center gap-2.5 h-8 pl-2 pr-2 rounded-lg transition-fast text-sm text-foreground",
                 projectId ? "hover:bg-accent" : "opacity-40 cursor-not-allowed"
               )}
             >
@@ -490,7 +490,7 @@ export function ChatPage({
                   setMsgSearchSeed(e.target.value);
                 }}
                 placeholder={t("sessions.search")}
-                className="h-8 pl-[1.9rem] pr-7 !text-sm !leading-none shadow-none rounded-lg border-border/40 truncate"
+                className="h-8 pl-8 pr-7 !text-sm !leading-none shadow-none rounded-lg border-border/40 truncate"
               />
               {searchQuery && (
                 <button
@@ -558,7 +558,7 @@ export function ChatPage({
                 key={isFakeEntry ? "__new_chat__" : session.id}
                 onClick={() => handleSelectSession(session.id)}
                 className={cn(
-                  "flex w-full items-center gap-2 pl-4 pr-2 py-1.5 text-xs transition-fast",
+                  "flex w-full items-center gap-3 pl-5 pr-2 py-1.5 text-xs transition-fast",
                   isActive
                     ? "bg-primary/10 text-foreground font-medium"
                     : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
