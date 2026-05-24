@@ -50,6 +50,7 @@ function ProjectSessionGroup({
   sessionNames,
   onSelectSession,
   showNewChat,
+  refreshKey,
 }: {
   project: Project;
   isCollapsed: boolean;
@@ -57,10 +58,11 @@ function ProjectSessionGroup({
   sessionNames: Record<string, string> | null | undefined;
   onSelectSession: (sessionId: string, projectName: string) => void;
   showNewChat?: boolean;
+  refreshKey?: number;
 }) {
   const { data: sessions } = useInvoke<Session[]>(
     "list_sessions",
-    { encodedName: project.encoded_name }
+    { encodedName: project.encoded_name, _refresh: refreshKey }
   );
 
   if (!sessions || !sessionNames) return null;
@@ -131,6 +133,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   const [viewingProject, setViewingProject] = useState<string | null>(null);
   const [newChatPath, setNewChatPath] = useState<string | null>(null);
   const [isNewChat, setIsNewChat] = useState(false);
+  const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
   const pendingUserMsgRef = useRef<string | null>(null);
@@ -330,6 +333,14 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           setPendingUserMessage(null);
           pendingUserMsgRef.current = null;
 
+          // Extract real session_id from result and transition from fake session
+          const realSessionId = (chunk.data as Record<string, unknown>)?.session_id as string | undefined;
+          if (realSessionId && realSessionId !== chunk.session_id) {
+            setSelectedSession(realSessionId);
+            setIsNewChat(false);
+            setSessionsRefreshKey(k => k + 1);
+          }
+
           requestAnimationFrame(() => {
             if (messageAreaRef.current) {
               messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
@@ -482,6 +493,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
                   sessionNames={sessionNames}
                   onSelectSession={handleSelectSession}
                   showNewChat={isNewChat && viewingProject === project.encoded_name}
+                  refreshKey={sessionsRefreshKey}
                 />
               </div>
             );
