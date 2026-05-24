@@ -173,6 +173,16 @@ fn save_theme(theme: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn load_last_project() -> Result<Option<String>, String> {
+    hub::load_last_project().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_last_project(encoded_name: String) -> Result<(), String> {
+    hub::save_last_project(&encoded_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn list_custom_commands() -> Result<Vec<command::CustomCommand>, String> {
     command::list_custom_commands().map_err(|e| e.to_string())
 }
@@ -353,6 +363,8 @@ pub fn run() {
             toggle_always_on_top,
             load_theme,
             save_theme,
+            load_last_project,
+            save_last_project,
             list_custom_commands,
             save_custom_command,
             delete_custom_command,

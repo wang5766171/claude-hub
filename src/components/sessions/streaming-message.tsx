@@ -65,9 +65,7 @@ export const StreamingMessage = memo(function StreamingMessage({ chunks, isCompl
         const content = (chunk.data as Record<string, unknown>)?.content as Array<Record<string, unknown>> | undefined;
         if (content) {
           for (const block of content) {
-            if (block.type === "text" && typeof block.text === "string") {
-              textRef.current += block.text;
-            } else if (block.type === "tool_use") {
+            if (block.type === "tool_use") {
               toolsRef.current.push({ name: block.name as string, input: block.input });
             }
           }

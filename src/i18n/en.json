@@ -49,11 +49,14 @@
     "merging": "Merging...",
     "splitProject": "Split Project ({{count}} sub-projects)",
     "imageLabel": "Image {{index}}",
+    "enterChat": "Enter Chat",
     "defaultImageMessage": "Please review this image"
   },
   "sessions": {
     "projects": "Projects",
     "selectProject": "Select a project",
+    "switchProject": "Switch",
+    "noProject": "Select a project",
     "title": "Sessions",
     "selectSession": "Select a session to view messages",
     "msgCount": "{{count}} msg",

@@ -49,11 +49,14 @@
     "merging": "合并中...",
     "splitProject": "拆分项目（{{count}} 个子项目）",
     "imageLabel": "图片{{index}}",
+    "enterChat": "进入会话",
     "defaultImageMessage": "请查看这张图片"
   },
   "sessions": {
     "projects": "项目",
     "selectProject": "选择一个项目",
+    "switchProject": "切换",
+    "noProject": "请选择项目",
     "title": "会话",
     "selectSession": "选择一个会话以查看消息",
     "msgCount": "{{count}} 条消息",

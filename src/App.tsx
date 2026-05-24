@@ -104,6 +104,7 @@ function App() {
   useTranslation();
   const [currentPage, setCurrentPage] = useState<Page>("chat");
   const [refreshing, setRefreshing] = useState(false);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useInvoke<Project[]>("scan_projects");
   const { data: sessionNames, loading: namesLoading, refetch: refetchNames } = useInvoke<Record<string, string>>("get_session_names");
 
@@ -111,28 +112,51 @@ function App() {
   // Refresh: refreshing flag set in event handler, cleared after awaiting actual Promises
   const loading = projectsLoading || namesLoading || refreshing;
 
+  // Restore last project on startup
+  useEffect(() => {
+    if (projects && !currentProject) {
+      invokeCommand<string | null>("load_last_project").then((lastEncoded) => {
+        if (lastEncoded) {
+          const found = projects.find(p => p.encoded_name === lastEncoded);
+          if (found) setCurrentProject(found);
+        }
+      }).catch(console.error);
+    }
+  }, [projects]);
+
   // Refresh handler: directly await refetch Promises in the event handler
-  // (not via useEffect watching loading states — that's an anti-pattern broken by React batching)
   const handleRefresh = useCallback(async (): Promise<number> => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchProjects(), refetchNames()]);
+      const newProjects = await refetchProjects();
+      // Sync currentProject with refreshed data
+      setCurrentProject(prev => {
+        if (!prev) return null;
+        return newProjects.find(p => p.encoded_name === prev.encoded_name) ?? null;
+      });
+      await refetchNames();
       return Date.now();
     } finally {
       setRefreshing(false);
     }
   }, [refetchProjects, refetchNames]);
 
-  const navigateToSession = (_encodedName: string) => {
+  const handleEnterProject = useCallback((project: Project) => {
+    setCurrentProject(project);
+    invokeCommand("save_last_project", { encodedName: project.encoded_name }).catch(console.error);
     setCurrentPage("chat");
-  };
+  }, []);
+
+  const handleSwitchProject = useCallback(() => {
+    setCurrentPage("manage");
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-background relative">
       <TitleBar currentPage={currentPage} onNavigate={setCurrentPage} disabled={loading} />
       <div className="flex-1 overflow-hidden">
-        <div className={cn("h-full", currentPage !== "chat" && "hidden")}><ChatPage onOpenManage={() => setCurrentPage("manage")} onRefresh={handleRefresh} projects={projects} sessionNames={sessionNames} refetchNames={refetchNames} /></div>
-        <div className={cn("h-full", currentPage !== "manage" && "hidden")}><ManagePage onBack={() => setCurrentPage("chat")} onViewSessions={navigateToSession} /></div>
+        <div className={cn("h-full", currentPage !== "chat" && "hidden")}><ChatPage currentProject={currentProject} onRefresh={handleRefresh} sessionNames={sessionNames} refetchNames={refetchNames} onSwitchProject={handleSwitchProject} /></div>
+        <div className={cn("h-full", currentPage !== "manage" && "hidden")}><ManagePage onBack={() => setCurrentPage("chat")} onEnterProject={handleEnterProject} /></div>
       </div>
       <div className="h-6 flex items-center px-4 text-[10px] text-muted-foreground/50 border-t border-border/30" data-tauri-drag-region>
         <span>{projects?.length ?? 0} projects</span>

@@ -6,11 +6,11 @@ import { ConfigPage } from "./config-page";
 import { CommandsPage } from "./commands-page";
 import { FolderOpen, Settings, Rocket, Archive, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ManageTab } from "@/types";
+import type { ManageTab, Project } from "@/types";
 
 interface ManagePageProps {
   onBack: () => void;
-  onViewSessions: (encodedName: string) => void;
+  onEnterProject: (project: Project) => void;
 }
 
 const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string; iconColor: string }[] = [
@@ -20,7 +20,7 @@ const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string; iconColo
   { id: "backups", icon: Archive, labelKey: "config.backups", iconColor: "text-[var(--icon-folder)]" },
 ];
 
-export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
+export function ManagePage({ onBack, onEnterProject }: ManagePageProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ManageTab>("projects");
 
@@ -57,7 +57,7 @@ export function ManagePage({ onBack, onViewSessions }: ManagePageProps) {
 
       {/* Right: Content */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "projects" && <ProjectsPage onViewSessions={onViewSessions} />}
+        {activeTab === "projects" && <ProjectsPage onEnterProject={onEnterProject} />}
         {activeTab === "config" && <ConfigPage initialTab="edit" />}
         {activeTab === "commands" && <CommandsPage />}
         {activeTab === "backups" && <ConfigPage initialTab="backups" />}

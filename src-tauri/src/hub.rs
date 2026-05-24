@@ -107,6 +107,17 @@ pub fn save_always_on_top(value: bool) -> Result<(), Box<dyn std::error::Error>>
     save_state(&state)
 }
 
+pub fn load_last_project() -> Result<Option<String>, Box<dyn std::error::Error>> {
+    let state = load_state()?;
+    Ok(state.last_project)
+}
+
+pub fn save_last_project(encoded_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = load_state().unwrap_or_default();
+    state.last_project = Some(encoded_name.to_string());
+    save_state(&state)
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct HiddenProjects {
     pub encoded_names: Vec<String>,
