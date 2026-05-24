@@ -87,8 +87,8 @@ function ProjectSessionGroup({
 
   return (
     <div className={isCollapsed ? "hidden" : ""}>
-      {displaySessions.map((session) => {
-        const isTheNewOne = newChatActive && session.id === selectedSessionId;
+      {displaySessions.map((session, index) => {
+        const isTheNewOne = newChatActive && (session.id === selectedSessionId || (!selectedSessionId && index === 0));
         const isActive = isTheNewOne || selectedSessionId === session.id;
         const name = isTheNewOne
           ? (sessionNames?.[session.id] || session.display_name || "新对话")
