@@ -236,9 +236,10 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(functio
                 size="icon-sm"
                 className={`h-8 w-8 rounded-full transition-all ${
                   (message.trim() || images.length > 0) 
-                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    ? "bg-[var(--icon-send-bg)] text-[var(--icon-send-fg)] shadow-sm hover:opacity-90" 
                     : "text-muted-foreground opacity-50"
                 }`}
+                style={(message.trim() || images.length > 0) ? { backgroundColor: 'var(--icon-send-bg)', color: 'var(--icon-send-fg)' } : undefined}
                 onClick={handleSend}
                 disabled={disabled || (!message.trim() && images.length === 0)}
               >

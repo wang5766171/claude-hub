@@ -77,6 +77,8 @@
   --icon-theme: var(--color-muted-foreground);
   --icon-about: var(--color-muted-foreground);
   --icon-pin: var(--color-muted-foreground);
+  --icon-send-bg: var(--color-primary);
+  --icon-send-fg: var(--color-primary-foreground);
 
   /* Font size presets (default: medium) */
   --font-size-base: 19px;
@@ -97,6 +99,8 @@
   --icon-theme: #f97316;
   --icon-about: #06b6d4;
   --icon-pin: #ef4444;
+  --icon-send-bg: #3b82f6;
+  --icon-send-fg: #ffffff;
 }
 
 /* === Dark theme === */
