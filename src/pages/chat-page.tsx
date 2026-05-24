@@ -43,20 +43,22 @@ function formatRelativeTime(date: Date | string): string {
   return `${mm}-${dd} ${hh}:${mi}`;
 }
 
+const NEW_CHAT_KEY = "__new_chat__";
+
 function ProjectSessionGroup({
   project,
   isCollapsed,
   selectedSessionId,
   sessionNames,
   onSelectSession,
-  showNewChat,
+  newChatActive,
 }: {
   project: Project;
   isCollapsed: boolean;
   selectedSessionId: string | null;
   sessionNames: Record<string, string> | null | undefined;
   onSelectSession: (sessionId: string, projectName: string) => void;
-  showNewChat?: boolean;
+  newChatActive?: boolean;
 }) {
   const { data: sessions } = useInvoke<Session[]>(
     "list_sessions",
@@ -65,24 +67,32 @@ function ProjectSessionGroup({
 
   if (!sessions || !sessionNames) return null;
 
-  // When fake "新对话" is showing, hide the real session to avoid duplication
-  const visibleSessions = showNewChat
-    ? sessions.filter(s => s.id !== selectedSessionId)
-    : sessions;
+  const hasRealSession = newChatActive && selectedSessionId && sessions.some(s => s.id === selectedSessionId);
+
+  // Build display list: if new chat active and real session not yet in list, prepend synthetic entry
+  let displaySessions: Session[];
+  if (newChatActive && !hasRealSession) {
+    const synthetic: Session = {
+      id: selectedSessionId || "__new__",
+      path: "",
+      messages: [],
+      display_name: "新对话",
+      started_at: new Date().toISOString(),
+      last_active: null,
+    };
+    displaySessions = [synthetic, ...sessions];
+  } else {
+    displaySessions = sessions;
+  }
 
   return (
     <div className={isCollapsed ? "hidden" : ""}>
-      {showNewChat && (
-        <button
-          className="flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] bg-primary/10 text-foreground font-medium"
-        >
-          <MessageSquare className="h-3 w-3 shrink-0 text-[var(--icon-message)]" />
-          <span className="truncate flex-1 text-left min-w-0">新对话</span>
-        </button>
-      )}
-      {visibleSessions.map((session) => {
-        const isActive = selectedSessionId === session.id;
-        const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
+      {displaySessions.map((session) => {
+        const isTheNewOne = newChatActive && session.id === selectedSessionId;
+        const isActive = isTheNewOne || selectedSessionId === session.id;
+        const name = isTheNewOne
+          ? (sessionNames?.[session.id] || session.display_name || "新对话")
+          : (sessionNames[session.id] || session.display_name || session.id.slice(0, 8));
         const timeStr = session.last_active
           ? formatRelativeTime(session.last_active)
           : session.started_at
@@ -90,7 +100,7 @@ function ProjectSessionGroup({
             : null;
         return (
           <button
-            key={session.id}
+            key={isTheNewOne ? NEW_CHAT_KEY : session.id}
             onClick={() => onSelectSession(session.id, project.encoded_name)}
             className={cn(
               "flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] transition-fast",
@@ -492,7 +502,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
                   selectedSessionId={selectedSession}
                   sessionNames={sessionNames}
                   onSelectSession={handleSelectSession}
-                  showNewChat={isNewChat && viewingProject === project.encoded_name}
+                  newChatActive={isNewChat && viewingProject === project.encoded_name}
                 />
               </div>
             );
