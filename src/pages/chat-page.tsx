@@ -49,12 +49,14 @@ function ProjectSessionGroup({
   selectedSessionId,
   sessionNames,
   onSelectSession,
+  showNewChat,
 }: {
   project: Project;
   isCollapsed: boolean;
   selectedSessionId: string | null;
   sessionNames: Record<string, string> | null | undefined;
   onSelectSession: (sessionId: string, projectName: string) => void;
+  showNewChat?: boolean;
 }) {
   const { data: sessions } = useInvoke<Session[]>(
     "list_sessions",
@@ -65,6 +67,14 @@ function ProjectSessionGroup({
 
   return (
     <div className={isCollapsed ? "hidden" : ""}>
+      {showNewChat && (
+        <button
+          className="flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] bg-primary/10 text-foreground font-medium"
+        >
+          <MessageSquare className="h-3 w-3 shrink-0 text-[var(--icon-message)]" />
+          <span className="truncate flex-1 text-left min-w-0">新对话</span>
+        </button>
+      )}
       {sessions.map((session) => {
         const isActive = selectedSessionId === session.id;
         const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
@@ -120,8 +130,10 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   const [msgSearchSeed, setMsgSearchSeed] = useState("");
   const [viewingProject, setViewingProject] = useState<string | null>(null);
   const [newChatPath, setNewChatPath] = useState<string | null>(null);
+  const [isNewChat, setIsNewChat] = useState(false);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
+  const pendingUserMsgRef = useRef<string | null>(null);
   const visitedSessions = useRef(new Set<string>());
   const scrollMemory = useRef(new Map<string, number>());
   const scrollAction = useRef<{ type: "bottom" } | { type: "restore"; top: number } | null>(null);
@@ -150,6 +162,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     if (!targetProject) return;
 
     setNewChatPath(null);
+    setIsNewChat(false);
 
     if (selectedSession && messageAreaRef.current) {
       scrollMemory.current.set(selectedSession, messageAreaRef.current.scrollTop);
@@ -184,12 +197,19 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setStreamComplete(false);
     setStreamingSession(null);
     setPendingUserMessage(null);
+    pendingUserMsgRef.current = null;
     setMsgSearchSeed("");
+    setIsNewChat(true);
 
     if (viewingProject) {
       const project = projects?.find((p) => p.encoded_name === viewingProject);
       if (project) {
         setNewChatPath(null);
+        setCollapsedProjects(prev => {
+          const next = new Set(prev);
+          next.delete(viewingProject);
+          return next;
+        });
         return;
       }
     }
@@ -251,7 +271,9 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setStreamComplete(false);
     setStreamingSession(sid);
     setPendingUserMessage(msg);
-    if (!selectedSession) {
+    pendingUserMsgRef.current = msg;
+    setIsNewChat(false);
+    if (!selectedSession || selectedSession === "__new__") {
       setSelectedSession(sid);
     }
     requestAnimationFrame(() => {
@@ -291,8 +313,8 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           }
 
           const newMessages: Message[] = [];
-          if (pendingUserMessage) {
-            newMessages.push({ role: "user", content: [{ type: "text", text: pendingUserMessage }], timestamp: Date.now() });
+          if (pendingUserMsgRef.current) {
+            newMessages.push({ role: "user", content: [{ type: "text", text: pendingUserMsgRef.current }], timestamp: Date.now() });
           }
           const assistantContent: ContentBlock[] = [];
           assistantContent.push(...tools);
@@ -307,6 +329,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           setStreamChunks([]);
           streamChunksRef.current = [];
           setPendingUserMessage(null);
+          pendingUserMsgRef.current = null;
 
           requestAnimationFrame(() => {
             if (messageAreaRef.current) {
@@ -459,6 +482,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
                   selectedSessionId={selectedSession}
                   sessionNames={sessionNames}
                   onSelectSession={handleSelectSession}
+                  showNewChat={isNewChat && viewingProject === project.encoded_name}
                 />
               </div>
             );
@@ -471,7 +495,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
 
       {/* Right: Chat area */}
       <div className="flex-1 flex flex-col min-w-0 bg-background">
-        {!selectedSession && !streamingActive && !newChatPath ? (
+        {!selectedSession && !streamingActive && !isNewChat ? (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
             <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
               <MessageSquare className="h-7 w-7 text-[var(--icon-message)]" />
@@ -481,7 +505,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
         ) : (
           <>
             {/* Session header */}
-            {selectedSession && currentSession ? (
+            {selectedSession && selectedSession !== "__new__" && currentSession ? (
               <div className="flex items-center justify-between px-5 h-[44px] border-b border-border/30" style={{ background: "var(--color-layer-1)" }}>
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{displayName}</span>
@@ -509,7 +533,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
             )}
             {/* Messages */}
             <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto">
-              {selectedSession && (
+              {selectedSession && selectedSession !== "__new__" && (
                 <MessageView messages={sessionMessages} initialSearchQuery={msgSearchSeed} onRefresh={handleRefreshMessages} flat scrollContainerRef={messageAreaRef} />
               )}
               {streamingActive && (
@@ -524,7 +548,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           </>
         )}
         {/* Chat input */}
-        {(viewingProject || newChatPath) && (
+        {(viewingProject || newChatPath || isNewChat) && (
           <ChatInput
             sessionId={selectedSession}
             projectPath={viewingProject ? (projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null) : newChatPath}
