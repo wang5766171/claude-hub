@@ -178,6 +178,11 @@ fn load_last_project() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    open::that(&url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn save_last_project(encoded_name: String) -> Result<(), String> {
     hub::save_last_project(&encoded_name).map_err(|e| e.to_string())
 }
@@ -364,6 +369,7 @@ pub fn run() {
             load_theme,
             save_theme,
             load_last_project,
+            open_url,
             save_last_project,
             list_custom_commands,
             save_custom_command,
