@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useDeferredValue, memo } from "react";
+import { useState, useMemo, useEffect, useDeferredValue, memo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -268,8 +268,7 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
   }, [messages, renderingQuery]);
 
   const [currentOcc, setCurrentOcc] = useState(0);
-  const autoScrollRef = useRef(false);
-  const userNavigated = useRef(false);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
 
   // When search query changes, find nearest match to viewport center and auto-scroll
   useEffect(() => {
@@ -294,7 +293,7 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
         }
       });
       setCurrentOcc(nearestIdx);
-      autoScrollRef.current = true;
+      setScrollTrigger((n) => n + 1);
     }, 50);
     return () => clearTimeout(timer);
   }, [renderingQuery, searchState.total]);
@@ -302,19 +301,16 @@ export const MessageView = memo(function MessageView({ messages, initialSearchQu
   const navigateMatch = (dir: 1 | -1) => {
     if (searchState.total === 0) return;
     setCurrentOcc((prev) => (prev + dir + searchState.total) % searchState.total);
-    userNavigated.current = true;
+    setScrollTrigger((n) => n + 1);
   };
 
   useEffect(() => {
-    if (!autoScrollRef.current && !userNavigated.current) return;
     const timer = setTimeout(() => {
       const el = document.querySelector(`[data-match-idx="${currentOcc}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 50);
-    autoScrollRef.current = false;
-    userNavigated.current = false;
     return () => clearTimeout(timer);
-  }, [currentOcc]);
+  }, [scrollTrigger]);
 
   const messageList = (
     <div className="space-y-4 p-4 overflow-hidden max-w-full">

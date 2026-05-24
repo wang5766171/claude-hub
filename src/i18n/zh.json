@@ -70,7 +70,7 @@
     "showThinking": "查看思考",
     "hideThinking": "收起思考",
     "showMore": "显示更多...",
-    "searchAll": "搜索所有会话...",
+    "searchAll": "搜索所有会话",
     "foundSessions": "找到 {{count}} 个会话",
     "noSessionsFound": "没有匹配的会话",
     "matches": "处匹配",

@@ -326,7 +326,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
       <div
         className={cn(
           "flex flex-col border-r border-border/30 transition-all duration-300 ease-out shrink-0",
-          sidebarCollapsed ? "w-14" : "w-[220px]"
+          sidebarCollapsed ? "w-14" : "w-[240px]"
         )}
         style={{ background: "var(--color-layer-2)" }}
       >
