@@ -366,16 +366,18 @@ export function ChatPage({
         setPendingUserMessage(null);
         pendingUserMsgRef.current = null;
 
-        // Refresh session list
-        setListRefreshKey(prev => prev + 1);
-
         requestAnimationFrame(() => {
           if (messageAreaRef.current) {
             messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
           }
         });
 
-        setTimeout(() => { refetchNames(); }, 2000);
+        // Delay list refresh until after AI title is fetched — avoids visual flicker
+        // when transitioning from injected entry to real backend entry
+        setTimeout(async () => {
+          await refetchNames();
+          setListRefreshKey(prev => prev + 1);
+        }, 2000);
       }
     }).then((fn) => { unlistenFn = fn; });
     return () => { if (unlistenFn) unlistenFn(); };
