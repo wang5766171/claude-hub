@@ -272,7 +272,6 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setStreamingSession(sid);
     setPendingUserMessage(msg);
     pendingUserMsgRef.current = msg;
-    setIsNewChat(false);
     if (!selectedSession || selectedSession === "__new__") {
       setSelectedSession(sid);
     }
