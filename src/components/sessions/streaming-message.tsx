@@ -84,16 +84,6 @@ export const StreamingMessage = memo(function StreamingMessage({ chunks, isCompl
     return () => cancelAnimationFrame(rafRef.current);
   }, [chunks, scrollToBottom]);
 
-  // Reset on unmount/new stream
-  useEffect(() => {
-    textRef.current = "";
-    toolsRef.current = [];
-    processedCount.current = 0;
-    userScrolledRef.current = false;
-    setDisplayText("");
-    setToolUses([]);
-  }, []);
-
   const hasContent = displayText.length > 0 || toolUses.length > 0;
 
   return (

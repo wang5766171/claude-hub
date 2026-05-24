@@ -284,6 +284,7 @@ export function ChatPage({
   // Stream listener (mount-only, exact match on streaming session)
   useEffect(() => {
     let unlistenFn: (() => void) | null = null;
+    let cancelled = false;
     listen<StreamChunk>("chat-stream", (event) => {
       const chunk = event.payload;
       const currentStreaming = streamingSessionRef.current;
@@ -377,8 +378,17 @@ export function ChatPage({
 
         setTimeout(() => { refetchNames(); }, 2000);
       }
-    }).then((fn) => { unlistenFn = fn; });
-    return () => { if (unlistenFn) unlistenFn(); };
+    }).then((fn) => {
+      if (cancelled) {
+        fn(); // Already unmounted — unregister immediately
+      } else {
+        unlistenFn = fn;
+      }
+    });
+    return () => {
+      cancelled = true;
+      if (unlistenFn) unlistenFn();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
