@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, FileText, MessageSquare, AlertCircle } from "lucide-react";
+import { FolderOpen, FileText, MessageSquare, AlertCircle, MoreVertical, Pencil as PencilIcon, MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
+import { useState, useRef, useEffect } from "react";
 import type { Project, ProjectMeta } from "@/types";
 
 interface ProjectCardProps {
@@ -16,6 +17,7 @@ interface ProjectCardProps {
   mergedCount?: number;
   onTagClick?: (tag: string) => void;
   onRefresh?: () => void;
+  onEnterChat?: () => void;
 }
 
 export function ProjectCard({
@@ -29,9 +31,24 @@ export function ProjectCard({
   mergedCount,
   onTagClick,
   onRefresh,
+  onEnterChat,
 }: ProjectCardProps) {
   const { t } = useTranslation();
   const displayName = meta?.custom_name || project.name;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   const handleInit = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -43,13 +60,21 @@ export function ProjectCard({
     onRefresh?.();
   };
 
+  const handleCardClick = () => {
+    if (managementMode) return;
+    if (project.initialized) {
+      onEnterChat?.();
+    }
+  };
+
   return (
     <Card
       className={cn(
-        "relative cursor-pointer transition-colors hover:border-primary/50",
+        "relative transition-colors hover:border-primary/50",
+        !managementMode && project.initialized && "cursor-pointer",
         selected && "border-primary ring-1 ring-primary/20"
       )}
-      onClick={managementMode ? undefined : onClick}
+      onClick={handleCardClick}
     >
       {managementMode && (
         <div
@@ -118,12 +143,42 @@ export function ProjectCard({
             {t("projects.notInitialized")}
           </button>
         ) : (
-          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
-              {t("projects.sessionCount", { count: project.session_count })}
-            </span>
-            {project.last_active && <span>{project.last_active}</span>}
+          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" />
+                {t("projects.sessionCount", { count: project.session_count })}
+              </span>
+              {project.last_active && <span>{project.last_active}</span>}
+            </div>
+            {!managementMode && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent/50 transition-fast"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 bottom-full mb-1 w-28 rounded-lg border border-border bg-card shadow-lg z-20 overflow-hidden">
+                    <button
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-accent/50 transition-fast"
+                      onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onClick(); }}
+                    >
+                      <PencilIcon className="h-3 w-3" />
+                      {t("common.edit")}
+                    </button>
+                    <button
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-accent/50 transition-fast"
+                      onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEnterChat?.(); }}
+                    >
+                      <MessageSquareText className="h-3 w-3" />
+                      {t("projects.enterChat")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>

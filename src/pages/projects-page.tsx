@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/input";
 import type { Project, ProjectMeta, ProjectMergeInfo } from "@/types";
 
 interface ProjectsPageProps {
-  onViewSessions?: (encodedName: string) => void;
+  onEnterProject?: (project: Project) => void;
 }
 
-export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
+export function ProjectsPage({ onEnterProject }: ProjectsPageProps) {
   const { t } = useTranslation();
   const { data: projects, loading, refetch } = useInvoke<Project[]>("scan_projects");
   const { data: projectMetas, refetch: refetchMetas } = useInvoke<Record<string, ProjectMeta>>("load_project_metas");
@@ -206,6 +206,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
               mergedCount={getMergedCount(project.encoded_name)}
               onTagClick={(tag) => setSelectedTag(selectedTag === tag ? null : tag)}
               onRefresh={() => { refetch(); refetchMerges(); }}
+              onEnterChat={() => onEnterProject?.(project)}
             />
           ))}
         </div>
@@ -215,7 +216,7 @@ export function ProjectsPage({ onViewSessions }: ProjectsPageProps) {
         <ProjectDetail
           project={selectedProject}
           onClose={() => setSelectedProject(null)}
-          onViewSessions={(name) => onViewSessions?.(name)}
+          onViewSessions={(_name) => {}}
           onRemoved={() => { setSelectedProject(null); refetch(); }}
           projectMetas={projectMetas ?? undefined}
           onUpdateMetas={refetchMetas}

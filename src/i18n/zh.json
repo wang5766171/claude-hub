@@ -49,16 +49,22 @@
     "merging": "合并中...",
     "splitProject": "拆分项目（{{count}} 个子项目）",
     "imageLabel": "图片{{index}}",
-    "defaultImageMessage": "请查看这张图片"
+    "fileLabel": "文件{{index}}",
+    "enterChat": "进入会话",
+    "defaultImageMessage": "请查看这张图片",
+    "defaultFileMessage": "请查看这些文件"
   },
   "sessions": {
     "projects": "项目",
     "selectProject": "选择一个项目",
+    "switchProject": "切换",
+    "noProject": "请选择项目",
     "title": "会话",
     "selectSession": "选择一个会话以查看消息",
     "msgCount": "{{count}} 条消息",
     "user": "用户",
     "assistant": "助手",
+    "rename": "重命名",
     "renameTitle": "重命名会话",
     "renamePlaceholder": "输入会话名称（留空则重置）",
     "sessionId": "会话 ID：",
@@ -70,7 +76,7 @@
     "showThinking": "查看思考",
     "hideThinking": "收起思考",
     "showMore": "显示更多...",
-    "searchAll": "搜索所有会话...",
+    "searchAll": "搜索所有会话",
     "foundSessions": "找到 {{count}} 个会话",
     "noSessionsFound": "没有匹配的会话",
     "matches": "处匹配",
@@ -79,12 +85,14 @@
     "copy": "复制",
     "copied": "已复制",
     "chatPlaceholder": "输入消息发送到当前会话...",
-    "chatPlaceholderSingleImage": "描述你希望 Claude 对这张图片做什么，或直接发送",
-    "chatPlaceholderMultiImage": "已按上传顺序标注图片（图片1、图片2...），建议简要说明各图片用途，以便 AI 准确理解",
+    "chatPlaceholderSingleFile": "描述你希望 Claude 对这个文件做什么，或直接发送",
+    "chatPlaceholderMultiFile": "已按上传顺序标注文件（文件1、文件2...），建议简要说明各文件用途，以便 AI 准确理解",
     "send": "发送",
     "stop": "停止",
-    "attachImage": "添加图片",
+    "attachImage": "添加附件",
     "newSession": "新建会话",
+    "refresh": "刷新列表",
+    "openTerminal": "打开终端",
     "resuming": "正在打开终端...",
     "toolCalls": "工具调用 ({{count}})",
     "thinkingDots": "思考中...",
@@ -247,5 +255,19 @@
     "notesPlaceholder": "输入备注",
     "addMetaHint": "点击编辑按钮添加自定义名称、标签或备注",
     "matcher": "匹配器"
+  },
+  "about": {
+    "title": "关于",
+    "pin": "置顶",
+    "unpin": "取消置顶"
+  },
+  "fontSize": {
+    "title": "字体",
+    "ui": "系统 UI",
+    "prose": "会话内容",
+    "small": "小",
+    "medium": "中",
+    "large": "大",
+    "xlarge": "特大"
   }
 }

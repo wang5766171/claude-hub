@@ -49,16 +49,22 @@
     "merging": "Merging...",
     "splitProject": "Split Project ({{count}} sub-projects)",
     "imageLabel": "Image {{index}}",
-    "defaultImageMessage": "Please review this image"
+    "fileLabel": "File {{index}}",
+    "enterChat": "Enter Chat",
+    "defaultImageMessage": "Please review this image",
+    "defaultFileMessage": "Please review these files"
   },
   "sessions": {
     "projects": "Projects",
     "selectProject": "Select a project",
+    "switchProject": "Switch",
+    "noProject": "Select a project",
     "title": "Sessions",
     "selectSession": "Select a session to view messages",
     "msgCount": "{{count}} msg",
     "user": "User",
     "assistant": "Assistant",
+    "rename": "Rename",
     "renameTitle": "Rename Session",
     "renamePlaceholder": "Enter session name (leave empty to reset)",
     "sessionId": "Session ID: ",
@@ -79,12 +85,14 @@
     "copy": "Copy",
     "copied": "Copied",
     "chatPlaceholder": "Type a message to send to the current session...",
-    "chatPlaceholderSingleImage": "Describe what you want Claude to do with this image, or just send",
-    "chatPlaceholderMultiImage": "Images are labeled in upload order (Image 1, Image 2...). Briefly describe each for accurate AI understanding",
+    "chatPlaceholderSingleFile": "Describe what you want Claude to do with this file, or just send",
+    "chatPlaceholderMultiFile": "Files are labeled in upload order (File 1, File 2...). Briefly describe each for accurate AI understanding",
     "send": "Send",
     "stop": "Stop",
-    "attachImage": "Attach image",
+    "attachImage": "Attach file",
     "newSession": "New session",
+    "refresh": "Refresh list",
+    "openTerminal": "Open terminal",
     "resuming": "Opening terminal...",
     "toolCalls": "Tool Calls ({{count}})",
     "thinkingDots": "Thinking...",
@@ -247,5 +255,19 @@
     "notesPlaceholder": "Enter notes",
     "addMetaHint": "Click edit to add a custom name, tags, or notes",
     "matcher": "Matcher"
+  },
+  "about": {
+    "title": "About",
+    "pin": "Pin",
+    "unpin": "Unpin"
+  },
+  "fontSize": {
+    "title": "Font",
+    "ui": "System UI",
+    "prose": "Content",
+    "small": "S",
+    "medium": "M",
+    "large": "L",
+    "xlarge": "XL"
   }
 }

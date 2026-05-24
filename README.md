@@ -1,92 +1,81 @@
 <div align="center">
 
-# Claude Hub
+# Jishu Hub
 
-**A desktop GUI for managing [Claude Code](https://docs.anthropic.com/en/docs/claude-code) projects, sessions, and configuration.**
+### A Desktop Manager for Claude Code — Projects, Sessions & Config in One Place
 
-Repo: [GitHub](https://github.com/wang5766171/claude-hub) | [Gitee (国内镜像)](https://gitee.com/wangzwa/claude-hub)
+[![Version](https://img.shields.io/github/v/release/wang5766171/jishu-hub?color=blue&label=version)](https://github.com/wang5766171/jishu-hub/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://github.com/wang5766171/jishu-hub/releases)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-orange.svg)](https://tauri.app/)
 
-[![Download](https://img.shields.io/badge/Download-latest%20release-brightgreen.svg)](https://github.com/wang5766171/claude-hub/releases/latest)
-
-[English](#features) | [中文文档](./README.zh-CN.md)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tauri v2](https://img.shields.io/badge/Tauri-v2-blue.svg)](https://v2.tauri.app/)
-[![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
-[![Rust](https://img.shields.io/badge/Rust-1.77+-dea584.svg)](https://www.rust-lang.org/)
-
-[Report Bug](https://github.com/wang5766171/claude-hub/issues/new?template=bug_report.yml) · [Request Feature](https://github.com/wang5766171/claude-hub/issues/new?template=feature_request.yml) · [Discussions](https://github.com/wang5766171/claude-hub/discussions)
+[English](#) | [中文](README_ZH.md)
 
 </div>
 
----
+## Why Jishu Hub?
 
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) is a powerful AI coding CLI — but everyday use has its friction:
+
+- Switching between projects requires repeated terminal commands
+- Session history is buried in JSONL files
+- Editing config means hand-editing `settings.json` (easy to make mistakes)
+- Chatting with AI means opening a terminal every time
+
+**Jishu Hub** wraps Claude Code in a native desktop GUI:
+
+- **In-App Chat** — Talk to Claude directly inside Hub, no terminal needed. Send any file type as attachments
+- **Project Management** — Auto-discovers all projects, one-click switching
+- **Session Browser** — Search and browse full conversation history with syntax highlighting
+- **Config Editor** — Form-based editing, no more JSON typos
+- **Plugin Architecture** — Extensible multi-agent framework ready for future agents
+
+## Screenshots
+
+<!-- Add screenshots here, format:
 <p align="center">
-  <img src="./docs/screenshots/projects.png" alt="Projects Page" width="49%" />
-  <img src="./docs/screenshots/sessions.png" alt="Sessions Page" width="49%" />
+  <img src="./docs/screenshots/chat-en.png" alt="Chat Page" width="49%" />
+  <img src="./docs/screenshots/manage-en.png" alt="Manage Page" width="49%" />
 </p>
+-->
 
-<p align="center">
-  <img src="./docs/screenshots/config.png" alt="Config Page" width="49%" />
-</p>
-
-> **TL;DR** — If you use Claude Code CLI daily and want a visual way to manage projects, browse session history, and edit config without touching JSON files, this is for you.
-
-## Why Claude Hub?
-
-Claude Code is powerful, but managing multiple projects, digging through session logs, and editing `settings.json` by hand gets tedious. Claude Hub gives you a **point-and-click interface** for all of that:
-
-- See all your projects at a glance
-- Browse and search full conversation history
-- Edit config with a proper form UI (no more JSON typos)
-- Save and switch between config presets
-- Automatic config backups with one-click restore
+> Screenshots coming soon
 
 ## Features
 
-### Project Management
-- Auto-discovers all projects from `~/.claude/projects/`
-- Shows session count, last active time, and CLAUDE.md status
-- Add/remove projects via folder picker
+### Chat
+- Chat with Claude directly in the app, no terminal required
+- Send any file type as attachments (images, documents, code, etc.)
+- Project-local files detected automatically — referenced by path, not copied
+- Three ways to add files: paste, drag-and-drop, or file picker
+- Streaming output with real-time Markdown rendering
 
-### Session Browser
-- Filter sessions by project
-- View full conversation content with syntax highlighting
+### Session Management
+- Browse all sessions grouped by project
+- Search session content to quickly find past conversations
 - Custom session naming for easy identification
+- Resume sessions in terminal with one click
 
-### Configuration Editor
+### Project Management
+- Auto-discovers all projects under `~/.claude/projects/`
+- Shows session count and last active time
+- Add projects via folder picker (including uninitialized projects)
+
+### Configuration
 - Visual form editor for `settings.json`
-- Model selector dropdown
-- Environment variables key-value editor
-- Plugin toggle switches
-- Export/Import config as JSON files
-
-### Config Presets
-- Save current config as a named preset
-- One-click apply to switch between configs
-- Manage multiple presets for different workflows
-
-### Backup & Restore
-- Auto-backup on every config save
-- Browse backup history with timestamps
-- One-click restore to any previous version
+- Model selector, environment variables, plugin toggles
+- Save and switch between config presets
+- Auto-backup with one-click restore
 
 ### Custom Commands
 - Create and manage custom slash commands
-- Execute commands directly from the GUI
+- Execute commands directly from the UI
 
-## Tech Stack
+### Personalization
+- Three themes: Light / Colorful / Dark (dark by default)
+- Independent font size control for UI and chat content (4 presets)
+- Bilingual support (Chinese & English), auto-detects system language
 
-| Layer | Technology |
-|-------|-----------|
-| Desktop Framework | [Tauri v2](https://v2.tauri.app/) |
-| Frontend | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
-| UI Components | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS v4](https://tailwindcss.com/) |
-| Backend | [Rust](https://www.rust-lang.org/) |
-| Build Tools | [Vite](https://vitejs.dev/) + [Cargo](https://doc.rust-lang.org/cargo/) |
-| i18n | [i18next](https://www.i18next.com/) (English & Chinese) |
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
@@ -96,98 +85,58 @@ Claude Code is powerful, but managing multiple projects, digging through session
 | [Rust](https://rustup.rs/) | 1.77+ | Backend compile |
 | [VS Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) | Latest | Windows C++ toolchain |
 
-### Install (Windows)
-
-**1. Install Rust**
-
-Download from [rustup.rs](https://rustup.rs/) and run `rustup-init.exe`.
-
-```bash
-rustup default stable-x86_64-pc-windows-msvc
-```
-
-**2. Install Node.js**
-
-```bash
-winget install OpenJS.NodeJS.LTS
-```
-
-**3. Install Visual Studio Build Tools**
-
-```bash
-winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive"
-```
-
-Restart your terminal after installation.
-
-**4. Verify**
-
-```bash
-rustc --version && node --version && npm --version
-```
-
 ### Build & Run
 
 ```bash
+# Clone the repo
+git clone https://github.com/wang5766171/jishu-hub.git
+cd jishu-hub
+
 # Install dependencies
 npm install
 
 # Dev mode (hot reload)
 npm run tauri dev
 
-# Production build (.exe installer)
+# Production build
 npm run tauri build
 ```
 
-Build output: `src-tauri/target/release/bundle/` (MSI + NSIS installers).
+## Download & Install
 
-### Run Tests
+Download the latest release from [GitHub Releases](https://github.com/wang5766171/jishu-hub/releases/latest).
 
-```bash
-cd src-tauri && cargo test
-```
+For users in China, downloads are also available from [Gitee Releases](https://gitee.com/wangzwa/jishu-hub/releases).
 
-## Project Structure
+**System Requirements**: Windows 10 or later
 
-```
-src-tauri/src/
-├── main.rs          # Tauri entry point
-├── lib.rs           # IPC command registration
-├── project.rs       # Project scanning & path encoding
-├── config.rs        # Config load/save/backup/import/export
-├── session.rs       # JSONL session parsing
-├── history.rs       # Command history parsing
-├── command.rs       # Custom command management
-└── hub.rs           # ~/.claude-hub/ metadata
+<details>
+<summary><strong>Tech Stack</strong></summary>
 
-src/
-├── App.tsx          # App entry & page routing
-├── pages/           # Page components
-├── components/
-│   ├── layout/      # AppLayout, Sidebar, StatusBar
-│   ├── projects/    # ProjectCard, ProjectDetail
-│   ├── sessions/    # SessionList, SessionDetail, MessageView
-│   ├── config/      # Config editor, presets, backups
-│   ├── commands/    # Custom commands UI
-│   └── ui/          # shadcn/ui base components
-├── hooks/           # Custom React hooks
-├── types/           # TypeScript type definitions
-└── lib/             # Utility functions
-```
+| Layer | Technology |
+|-------|-----------|
+| Desktop Framework | [Tauri v2](https://v2.tauri.app/) |
+| Frontend | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
+| UI | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS v4](https://tailwindcss.com/) |
+| Backend | [Rust](https://www.rust-lang.org/) |
+| i18n | [i18next](https://www.i18next.com/) |
 
-## Data Locations
+</details>
+
+<details>
+<summary><strong>Data Locations</strong></summary>
 
 | Path | Description |
 |------|-------------|
-| `~/.claude/projects/` | Claude Code project data (read-only) |
-| `~/.claude/settings.json` | Global config (read/write) |
-| `~/.claude/backups/` | Config backup files |
-| `~/.claude-hub/presets.json` | Custom config presets |
-| `~/.claude-hub/sessions.json` | Session name mappings |
+| `~/.claude/projects/` | Claude Code project data |
+| `~/.claude/settings.json` | Global configuration |
+| `~/.jishu-hub/` | Hub metadata (session names, presets, state) |
+
+</details>
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Whether it's code, bug reports, or feature suggestions.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -197,10 +146,4 @@ Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for g
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) by Anthropic
-- [Tauri](https://tauri.app/) — for making desktop apps with Rust + Web
-- [shadcn/ui](https://ui.shadcn.com/) — beautiful and accessible UI components
+[MIT](LICENSE) © 2025 Jishu Hub

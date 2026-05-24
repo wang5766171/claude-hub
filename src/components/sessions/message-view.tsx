@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useDeferredValue } from "react";
+import { useState, useMemo, useEffect, useDeferredValue, memo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { User, Bot, Wrench, ChevronDown, ChevronUp, ChevronRight, Search, ArrowDown, ArrowUp, RotateCw, Copy, Check, X } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import type { Message, ContentBlock } from "@/types";
 import { InlineImages, stripImagePrompt } from "./inline-image";
 
@@ -17,6 +18,7 @@ interface MessageViewProps {
   initialSearchQuery?: string;
   onRefresh?: () => void;
   flat?: boolean;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 function formatTimestamp(ts: number | null): string {
@@ -143,7 +145,7 @@ function TextBlock({ text, query, dark, matchOffset, currentMatch }: { text: str
   if (dark) {
     const display = stripImagePrompt(text);
     return (
-      <div className="whitespace-pre-wrap break-all text-sm overflow-hidden">
+      <div className="whitespace-pre-wrap break-all overflow-hidden" style={{ fontSize: "var(--font-size-prose)" }}>
         {query ? highlightText(display, query, matchOffset ?? 0, currentMatch ?? -1) : display}
       </div>
     );
@@ -241,7 +243,7 @@ function renderBlock(block: ContentBlock, query: string, dark?: boolean, matchOf
   }
 }
 
-export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: MessageViewProps) {
+export const MessageView = memo(function MessageView({ messages, initialSearchQuery, onRefresh, flat, scrollContainerRef }: MessageViewProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || "");
   const renderingQuery = useDeferredValue(searchQuery);
@@ -251,133 +253,154 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
   }, [initialSearchQuery]);
 
   const searchState = useMemo(() => {
-    if (!renderingQuery.trim()) return { total: 0, offsets: new Map<string, number>() };
+    if (!renderingQuery.trim()) return { total: 0, offsets: new Map<string, number>(), matchToMessage: [] as number[] };
     const escaped = renderingQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(escaped, "gi");
     const offsets = new Map<string, number>();
+    const matchToMessage: number[] = [];
     let total = 0;
     messages.forEach((msg, mi) => {
       msg.content.forEach((block, bi) => {
         if (block.type !== "text") return;
         offsets.set(`${mi}-${bi}`, total);
         const m = block.text.match(regex);
-        total += m ? m.length : 0;
+        const count = m ? m.length : 0;
+        for (let k = 0; k < count; k++) matchToMessage.push(mi);
+        total += count;
       });
     });
-    return { total, offsets };
+    return { total, offsets, matchToMessage };
   }, [messages, renderingQuery]);
 
   const [currentOcc, setCurrentOcc] = useState(0);
-  const autoScrollRef = useRef(false);
-  const userNavigated = useRef(false);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
 
-  // When search query changes, find nearest match to viewport center and auto-scroll
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollContainerRef?.current ?? null,
+    estimateSize: () => 80,
+    overscan: 10,
+  });
+
+  // When search query changes, auto-scroll to first match
   useEffect(() => {
     if (!renderingQuery.trim() || searchState.total === 0) {
       setCurrentOcc(0);
       return;
     }
-    const timer = setTimeout(() => {
-      const marks = document.querySelectorAll('[data-match-idx]');
-      if (marks.length === 0) return;
-      const viewportCenter = window.innerHeight / 2;
-      let nearestIdx = 0;
-      let nearestDist = Infinity;
-      marks.forEach((el) => {
-        const idx = parseInt(el.getAttribute('data-match-idx') || '0');
-        const rect = el.getBoundingClientRect();
-        const center = rect.top + rect.height / 2;
-        const dist = Math.abs(center - viewportCenter);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestIdx = idx;
-        }
-      });
-      setCurrentOcc(nearestIdx);
-      autoScrollRef.current = true;
-    }, 50);
-    return () => clearTimeout(timer);
+    setCurrentOcc(0);
+    setScrollTrigger((n) => n + 1);
   }, [renderingQuery, searchState.total]);
 
   const navigateMatch = (dir: 1 | -1) => {
     if (searchState.total === 0) return;
     setCurrentOcc((prev) => (prev + dir + searchState.total) % searchState.total);
-    userNavigated.current = true;
+    setScrollTrigger((n) => n + 1);
   };
 
+  // Scroll to the message containing currentOcc, then fine-tune to the match highlight
   useEffect(() => {
-    if (!autoScrollRef.current && !userNavigated.current) return;
+    if (searchState.total === 0 || scrollTrigger === 0) return;
+    const msgIdx = searchState.matchToMessage[currentOcc];
+    if (msgIdx !== undefined && flat) {
+      virtualizer.scrollToIndex(msgIdx, { align: "center" });
+    }
     const timer = setTimeout(() => {
       const el = document.querySelector(`[data-match-idx="${currentOcc}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
-    autoScrollRef.current = false;
-    userNavigated.current = false;
+    }, 120);
     return () => clearTimeout(timer);
-  }, [currentOcc]);
+  }, [scrollTrigger]);
 
-  const messageList = (
-    <div className="space-y-4 p-4 overflow-hidden max-w-full">
-      {messages.map((msg, i) => {
-        const isUser = msg.role === "user";
-        return (
-          <div
-            key={i}
-            className={cn(
-              "flex gap-2.5 w-full",
-              isUser ? "justify-end" : "justify-start",
-            )}
-          >
-            {/* Avatar (left for assistant) */}
-            {!isUser && (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
-                <Bot className="h-3.5 w-3.5" />
-              </div>
-            )}
-
-            {/* Bubble */}
-            <div className={cn("max-w-[85%] min-w-0 flex flex-col", isUser && "items-end")}>
-              <div className="flex items-center gap-2 mb-1 text-xs">
-                <span className="font-medium text-muted-foreground">
-                  {isUser ? t("sessions.user") : t("sessions.assistant")}
-                </span>
-                {msg.timestamp && (
-                  <span className="text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
-                )}
-              </div>
-              <div className={cn(
-                "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0 max-w-full",
-                isUser ? "bg-blue-500 text-white" : "bg-muted"
-              )}>
-                {isUser && <InlineImages text={extractMessageText(msg)} />}
-                {msg.content.map((block, j) => (
-                  <div key={j} className="overflow-hidden">
-                    {renderBlock(block, renderingQuery, isUser, searchState.offsets.get(`${i}-${j}`) ?? 0, currentOcc)}
-                  </div>
-                ))}
-              </div>
-              <CopyButton text={extractMessageText(msg)} />
-            </div>
-
-            {/* Avatar (right for user) */}
-            {isUser && (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
-                <User className="h-3.5 w-3.5" />
-              </div>
+  const renderMessage = useCallback((msg: Message, i: number) => {
+    const isUser = msg.role === "user";
+    return (
+      <div
+        className={cn(
+          "flex gap-2.5 w-full",
+          isUser ? "justify-end" : "justify-start",
+        )}
+      >
+        {!isUser && (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-bot-bg)] text-[var(--icon-avatar-bot)] mt-5">
+            <Bot className="h-3.5 w-3.5" />
+          </div>
+        )}
+        <div className={cn("max-w-[85%] min-w-0 flex flex-col", isUser && "items-end")}>
+          <div className="flex items-center gap-2 mb-1 text-xs">
+            <span className="font-medium text-muted-foreground">
+              {isUser ? t("sessions.user") : t("sessions.assistant")}
+            </span>
+            {msg.timestamp && (
+              <span className="text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
             )}
           </div>
-        );
-      })}
+          <div className={cn(
+            "rounded-xl px-3.5 py-2.5 space-y-2 overflow-hidden min-w-0 max-w-full",
+            isUser ? "bg-blue-500 text-white" : "bg-muted"
+          )}>
+            {isUser && <InlineImages text={extractMessageText(msg)} />}
+            {msg.content.map((block, j) => (
+              <div key={j} className="overflow-hidden">
+                {renderBlock(block, renderingQuery, isUser, searchState.offsets.get(`${i}-${j}`) ?? 0, currentOcc)}
+              </div>
+            ))}
+          </div>
+          <CopyButton text={extractMessageText(msg)} />
+        </div>
+        {isUser && (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-user-bg)] text-[var(--icon-avatar-user)] mt-5">
+            <User className="h-3.5 w-3.5" />
+          </div>
+        )}
+      </div>
+    );
+  }, [renderingQuery, searchState.offsets, currentOcc, t]);
+
+  const fullMessageList = (
+    <div className="space-y-4 p-4 overflow-hidden max-w-full">
+      {messages.map((msg, i) => (
+        <div key={i}>{renderMessage(msg, i)}</div>
+      ))}
     </div>
   );
+
+  const virtualMessageList = (
+    <div className="p-4">
+      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const msg = messages[virtualItem.index];
+          return (
+            <div
+              key={virtualItem.key}
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                transform: `translateY(${virtualItem.start}px)`,
+                left: 0,
+                right: 0,
+              }}
+              className="pb-4 overflow-hidden max-w-full"
+            >
+              {renderMessage(msg, virtualItem.index)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const messageList = flat && scrollContainerRef ? virtualMessageList : fullMessageList;
 
   // Flat mode: no ScrollArea — parent controls scrolling, search bar sticky at top
   if (flat) {
     return (
       <>
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-2 flex items-center gap-2">
+        <div className="sticky top-0 z-10 border-b border-border/30 px-4 py-2 flex items-center gap-2" style={{ background: "var(--color-layer-4)" }}>
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--icon-search)]" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -486,4 +509,4 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
       </ScrollArea>
     </div>
   );
-}
+});

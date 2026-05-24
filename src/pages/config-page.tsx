@@ -10,10 +10,10 @@ import { Download, Upload } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { ClaudeConfig } from "@/types";
 
-export function ConfigPage() {
+export function ConfigPage({ initialTab = "edit" }: { initialTab?: "edit" | "templates" | "backups" }) {
   const { t } = useTranslation();
   const { data: config, loading, refetch } = useInvoke<ClaudeConfig>("load_config");
-  const [activeTab, setActiveTab] = useState<"edit" | "templates" | "backups">("edit");
+  const [activeTab, setActiveTab] = useState<"edit" | "templates" | "backups">(initialTab);
 
   const handleConfigSaved = useCallback(() => {
     refetch();

@@ -21,7 +21,7 @@ pub struct Commands {
 
 fn commands_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-    let dir = home.join(".claude-hub");
+    let dir = home.join(".jishu-hub");
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join("commands.json"))
 }

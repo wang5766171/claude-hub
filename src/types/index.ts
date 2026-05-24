@@ -132,7 +132,17 @@ export interface BackupEntry {
   timestamp: string | null;
 }
 
-export type Page = "projects" | "sessions" | "config" | "commands";
+export type Page = "chat" | "manage";
+
+export type ManageTab = "projects" | "config" | "commands" | "backups";
+
+export interface AgentInfo {
+  id: string;
+  display_name: string;
+  version: string;
+  icon: string;
+  enabled: boolean;
+}
 
 export interface CustomCommand {
   id: string;
@@ -179,13 +189,13 @@ export interface StreamChunk {
   data: Record<string, unknown>;
 }
 
-export interface InputImage {
+export interface InputFile {
   data: string;
   filename: string;
   label: string | null;
 }
 
-export interface SavedImage {
+export interface SavedFile {
   path: string;
   label: string;
   index: number;

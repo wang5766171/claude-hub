@@ -219,7 +219,7 @@ export function SessionsPage({ initialProject, onConsumedInitial }: SessionsPage
           });
 
           // Update session list only — don't refresh messages to avoid visual jump
-          setTimeout(() => { refetchSessions(); refetchNames(); }, 2000);
+          setTimeout(() => { refetchSessions(true); refetchNames(true); }, 2000);
         }
       }
     }).then((fn) => {

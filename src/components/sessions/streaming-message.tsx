@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,7 +14,7 @@ interface StreamingMessageProps {
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function StreamingMessage({ chunks, isComplete, userMessage, scrollContainerRef }: StreamingMessageProps) {
+export const StreamingMessage = memo(function StreamingMessage({ chunks, isComplete, userMessage, scrollContainerRef }: StreamingMessageProps) {
   const { t } = useTranslation();
   const [displayText, setDisplayText] = useState("");
   const [toolUses, setToolUses] = useState<Array<{ name: string; input: unknown }>>([]);
@@ -65,9 +65,7 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
         const content = (chunk.data as Record<string, unknown>)?.content as Array<Record<string, unknown>> | undefined;
         if (content) {
           for (const block of content) {
-            if (block.type === "text" && typeof block.text === "string") {
-              textRef.current += block.text;
-            } else if (block.type === "tool_use") {
+            if (block.type === "tool_use") {
               toolsRef.current.push({ name: block.name as string, input: block.input });
             }
           }
@@ -86,16 +84,6 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
     return () => cancelAnimationFrame(rafRef.current);
   }, [chunks, scrollToBottom]);
 
-  // Reset on unmount/new stream
-  useEffect(() => {
-    textRef.current = "";
-    toolsRef.current = [];
-    processedCount.current = 0;
-    userScrolledRef.current = false;
-    setDisplayText("");
-    setToolUses([]);
-  }, []);
-
   const hasContent = displayText.length > 0 || toolUses.length > 0;
 
   return (
@@ -107,12 +95,12 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
             <div className="flex items-center gap-2 mb-1 text-xs">
               <span className="font-medium text-muted-foreground">{t("sessions.user")}</span>
             </div>
-            <div className="rounded-xl px-3.5 py-2.5 bg-blue-500 text-white whitespace-pre-wrap break-all text-sm overflow-hidden min-w-0 max-w-full">
+            <div className="rounded-xl px-3.5 py-2.5 bg-blue-500 text-white whitespace-pre-wrap break-all overflow-hidden min-w-0 max-w-full" style={{ fontSize: "var(--font-size-prose)" }}>
               <InlineImages text={userMessage} />
               {stripImagePrompt(userMessage)}
             </div>
           </div>
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-user-bg)] text-[var(--icon-avatar-user)] mt-5">
             <User className="h-3.5 w-3.5" />
           </div>
         </div>
@@ -120,7 +108,7 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
 
       {/* Assistant streaming response */}
       <div className="flex gap-2.5 w-full justify-start">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mt-5">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--icon-avatar-bot-bg)] text-[var(--icon-avatar-bot)] mt-5">
           <Bot className="h-3.5 w-3.5" />
         </div>
         <div className="max-w-[85%] min-w-0 flex flex-col">
@@ -159,7 +147,7 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
       </div>
     </div>
   );
-}
+});
 
 function StreamingToolBlock({ name, input }: { name: string; input: unknown }) {
   const { t } = useTranslation();
