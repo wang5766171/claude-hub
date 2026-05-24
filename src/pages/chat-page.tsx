@@ -61,10 +61,15 @@ function ProjectSessionGroup({
   newChatActive?: boolean;
   refreshKey?: number;
 }) {
-  const { data: sessions } = useInvoke<Session[]>(
+  const { data: sessions, refetch: refetchSessions } = useInvoke<Session[]>(
     "list_sessions",
-    { encodedName: project.encoded_name, _r: refreshKey }
+    { encodedName: project.encoded_name }
   );
+
+  // Refresh session list when refreshKey changes (new session created)
+  useEffect(() => {
+    if (refreshKey && refreshKey > 0) refetchSessions();
+  }, [refreshKey, refetchSessions]);
 
   if (!sessions || !sessionNames) return null;
 
