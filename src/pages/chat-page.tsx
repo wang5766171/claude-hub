@@ -390,13 +390,24 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
         </div>
 
         {/* Sidebar header: collapsed */}
-        <div className={cn("flex items-center justify-center h-[36px]", !sidebarCollapsed && "hidden")}>
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
+        <div className={cn("flex flex-col", !sidebarCollapsed && "hidden")} style={{ background: "var(--color-layer-1)" }}>
+          <div className="flex items-center justify-center px-3 pt-2 pb-1">
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex items-center justify-center px-3 pb-2">
+            <button
+              onClick={handleNewSession}
+              title={t("sessions.newSession")}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-fast"
+            >
+              <SquarePen className="h-4 w-4 text-[var(--icon-action)]" />
+            </button>
+          </div>
         </div>
 
         {/* Session tree: expanded */}
@@ -436,34 +447,8 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           })}
         </div>
 
-        {/* Session tree: collapsed */}
-        <div className={cn("flex-1 overflow-y-auto", !sidebarCollapsed && "hidden")}>
-          <div className="flex flex-col items-center gap-1 py-2">
-            {projects?.filter(p => p.session_count > 0).map((project) => (
-              <button
-                key={project.encoded_name}
-                onClick={() => {
-                  setSidebarCollapsed(false);
-                  setSelectedProject(project.encoded_name);
-                  setCollapsedProjects(prev => {
-                    const next = new Set(prev);
-                    next.delete(project.encoded_name);
-                    return next;
-                  });
-                }}
-                className={cn(
-                  "h-8 w-8 rounded-lg flex items-center justify-center text-xs font-medium transition-fast",
-                  selectedProject === project.encoded_name
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/30"
-                )}
-                title={project.name}
-              >
-                {project.name.charAt(0).toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Collapsed: empty body area */}
+        <div className={cn("flex-1", !sidebarCollapsed && "hidden")} />
       </div>
 
       {/* Right: Chat area */}
