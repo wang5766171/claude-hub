@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { MessageView } from "@/components/sessions/message-view";
 import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog";
@@ -12,9 +12,82 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { searchSessions } from "@/lib/session-search";
 import { cn } from "@/lib/utils";
-import type { Session, Project, Message, ContentBlock, SessionSearchResult, StreamChunk } from "@/types";
+import type { Session, Project, Message, ContentBlock, StreamChunk } from "@/types";
+
+function formatRelativeTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "刚刚";
+  if (diffMin < 60) return `${diffMin}分钟前`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}小时前`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}天前`;
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}-${dd} ${hh}:${mi}`;
+}
+
+function ProjectSessionGroup({
+  project,
+  isCollapsed,
+  selectedSessionId,
+  sessionNames,
+  onSelectSession,
+}: {
+  project: Project;
+  isCollapsed: boolean;
+  selectedSessionId: string | null;
+  sessionNames: Record<string, string> | null | undefined;
+  onSelectSession: (sessionId: string, projectName: string) => void;
+}) {
+  const { data: sessions } = useInvoke<Session[]>(
+    "list_sessions",
+    { encodedName: project.encoded_name }
+  );
+
+  if (!sessions || !sessionNames) return null;
+
+  return (
+    <div className={isCollapsed ? "hidden" : ""}>
+      {sessions.map((session) => {
+        const isActive = selectedSessionId === session.id;
+        const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
+        const timeStr = session.last_active
+          ? formatRelativeTime(session.last_active)
+          : session.started_at
+            ? formatRelativeTime(session.started_at)
+            : null;
+        return (
+          <button
+            key={session.id}
+            onClick={() => onSelectSession(session.id, project.encoded_name)}
+            className={cn(
+              "flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] transition-fast",
+              isActive
+                ? "bg-primary/10 text-foreground font-medium"
+                : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+            )}
+          >
+            <MessageSquare className="h-3 w-3 shrink-0 opacity-50" />
+            <span className="truncate flex-1 text-left min-w-0">{name}</span>
+            {timeStr && (
+              <span className={cn(
+                "text-[10px] shrink-0 tabular-nums",
+                isActive ? "text-accent-foreground/40" : "text-muted-foreground/40"
+              )}>{timeStr}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
   const { t } = useTranslation();
@@ -35,6 +108,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const [msgSearchSeed, setMsgSearchSeed] = useState("");
+  const [viewingProject, setViewingProject] = useState<string | null>(null);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
   const visitedSessions = useRef(new Set<string>());
@@ -42,13 +116,10 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
   const scrollAction = useRef<{ type: "bottom" } | { type: "restore"; top: number } | null>(null);
   const streamingActive = streamingSession || streamComplete;
 
-  // Auto-select first project with sessions
+  // Default: collapse all projects
   useEffect(() => {
-    if (projects && projects.length > 0 && !selectedProject) {
-      const withSessions = projects.filter(p => p.session_count > 0);
-      if (withSessions.length > 0) {
-        setSelectedProject(withSessions[0].encoded_name);
-      }
+    if (projects && projects.length > 0 && collapsedProjects.size === 0) {
+      setCollapsedProjects(new Set(projects.filter(p => p.session_count > 0).map(p => p.encoded_name)));
     }
   }, [projects]);
 
@@ -63,17 +134,6 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
     }
   }, [sessionMessages]);
 
-  const { data: sessions, refetch: refetchSessions } = useInvoke<Session[]>(
-    selectedProject ? "list_sessions" : "",
-    selectedProject ? { encodedName: selectedProject } : undefined
-  );
-
-  const _searchResults = useMemo<SessionSearchResult[]>(() => {
-    if (!sessions || !activeSearchQuery.trim()) return [];
-    return searchSessions(sessions, activeSearchQuery);
-  }, [sessions, activeSearchQuery]);
-  void _searchResults;
-
   const handleSelectSession = async (sessionId: string, projectName?: string) => {
     const targetProject = projectName || selectedProject;
     if (!targetProject) return;
@@ -84,6 +144,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
     const isFirstVisit = !visitedSessions.current.has(sessionId);
     setSelectedSession(sessionId);
     setSelectedProject(targetProject);
+    setViewingProject(targetProject);
     setMsgSearchSeed(activeSearchQuery);
 
     const messages = await invokeCommand<Message[]>("get_session_messages", {
@@ -124,8 +185,8 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
         setLoadingSessionId(null);
         return;
       }
-      const session = sessions?.find(s => s.id === sessionId);
-      const project = projects?.find((p) => p.encoded_name === selectedProject);
+      const session = viewingSessions?.find(s => s.id === sessionId);
+      const project = projects?.find((p) => p.encoded_name === viewingProject);
       const cwd = session?.project_path || project?.path;
       if (!cwd) return;
       const pid = await invokeCommand<number>("open_in_terminal", {
@@ -143,11 +204,11 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
   };
 
   const handleRefreshMessages = async () => {
-    if (selectedSession && selectedProject) {
+    if (selectedSession && viewingProject) {
       try {
         const msgs = await invokeCommand<Message[]>("get_session_messages", {
           sessionId: selectedSession,
-          encodedName: selectedProject,
+          encodedName: viewingProject,
         });
         setSessionMessages(msgs);
       } catch (e) {
@@ -209,7 +270,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
             }
           });
 
-          setTimeout(() => { refetchSessions(); refetchNames(); }, 2000);
+          setTimeout(() => { refetchNames(); }, 2000);
         }
       }
     }).then((fn) => { unlistenFn = fn; });
@@ -225,9 +286,14 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
     });
   };
 
-  const currentSession = sessions?.find((s) => s.id === selectedSession);
-  const displayName = selectedSession && sessionNames
-    ? sessionNames[selectedSession] || selectedSession.slice(0, 8)
+  // For the right panel, track sessions of the project being viewed (not the sidebar-selected one)
+  const { data: viewingSessions } = useInvoke<Session[]>(
+    viewingProject ? "list_sessions" : "",
+    viewingProject ? { encodedName: viewingProject } : undefined
+  );
+  const currentSession = viewingSessions?.find((s) => s.id === selectedSession);
+  const displayName = selectedSession
+    ? (sessionNames?.[selectedSession] || currentSession?.display_name || selectedSession.slice(0, 8))
     : "";
 
   if (projectsLoading) {
@@ -243,13 +309,13 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
       {/* Left sidebar: Session tree */}
       <div
         className={cn(
-          "flex flex-col border-r border-border/50 transition-all duration-300 ease-out shrink-0",
-          sidebarCollapsed ? "w-14" : "w-[260px]"
+          "flex flex-col border-r border-border/30 transition-all duration-300 ease-out shrink-0",
+          sidebarCollapsed ? "w-14" : "w-[220px]"
         )}
-        style={{ background: "var(--color-material-sidebar)", backdropFilter: "blur(20px)" }}
+        style={{ background: "var(--color-layer-2)" }}
       >
         {/* Sidebar header */}
-        <div className="flex items-center gap-2 px-3 py-3 border-b border-border/30">
+        <div className="flex items-center gap-2 px-3 h-[44px]" style={{ background: "var(--color-layer-1)" }}>
           {!sidebarCollapsed && (
             <>
               <div className="relative flex-1">
@@ -293,24 +359,21 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
         </div>
 
         {/* Session tree */}
-        <div className="flex-1 overflow-y-auto py-1">
+        <div className="flex-1 overflow-y-auto">
           {!sidebarCollapsed ? (
             <>
               {projects?.map((project) => {
                 if (project.session_count === 0) return null;
                 const isCollapsed = collapsedProjects.has(project.encoded_name);
-                const isSelected = selectedProject === project.encoded_name;
-
                 return (
                   <div key={project.encoded_name}>
                     <button
                       onClick={() => {
                         toggleProjectCollapse(project.encoded_name);
-                        if (!isCollapsed) setSelectedProject(project.encoded_name);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-1.5 px-3 py-1.5 text-sm transition-fast rounded-none",
-                        isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                        "flex w-full items-center gap-1.5 px-3 py-1.5 transition-fast rounded-none",
+                        "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       {isCollapsed ? (
@@ -319,32 +382,16 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
                         <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                       )}
                       <FolderOpen className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                      <span className="truncate text-xs font-medium">{project.name}</span>
+                      <span className="truncate text-[13px] font-medium">{project.name}</span>
                       <span className="text-[10px] text-muted-foreground/60 ml-auto shrink-0">{project.session_count}</span>
                     </button>
-                    {!isCollapsed && project.encoded_name === selectedProject && sessions && sessionNames && (
-                      <div>
-                        {sessions.map((session) => {
-                          const isActive = selectedSession === session.id;
-                          const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
-                          return (
-                            <button
-                              key={session.id}
-                              onClick={() => handleSelectSession(session.id, project.encoded_name)}
-                              className={cn(
-                                "flex w-full items-center gap-2 pl-8 pr-3 py-1.5 text-[13px] transition-fast",
-                                isActive
-                                  ? "bg-accent/80 text-accent-foreground font-medium"
-                                  : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
-                              )}
-                            >
-                              <MessageSquare className="h-3 w-3 shrink-0 opacity-50" />
-                              <span className="truncate">{name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <ProjectSessionGroup
+                      project={project}
+                      isCollapsed={isCollapsed}
+                      selectedSessionId={selectedSession}
+                      sessionNames={sessionNames}
+                      onSelectSession={handleSelectSession}
+                    />
                   </div>
                 );
               })}
@@ -400,10 +447,10 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
           <>
             {/* Session header */}
             {selectedSession && currentSession ? (
-              <div className="flex items-center justify-between px-5 py-2.5 border-b border-border/30">
+              <div className="flex items-center justify-between px-5 h-[44px] border-b border-border/30" style={{ background: "var(--color-layer-1)" }}>
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{displayName}</span>
-                  <span className="text-[11px] text-muted-foreground/50 font-mono">{selectedSession.slice(0, 8)}</span>
+                  <span className="text-[11px] text-muted-foreground/50 font-mono shrink-0">{selectedSession.slice(0, 8)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -422,7 +469,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
                 </div>
               </div>
             ) : (
-              <div className="px-5 py-2.5 border-b border-border/30">
+              <div className="px-5 h-[44px] flex items-center border-b border-border/30" style={{ background: "var(--color-layer-1)" }}>
                 <span className="font-medium text-sm text-muted-foreground">{t("sessions.newChat")}</span>
               </div>
             )}
@@ -443,10 +490,10 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
           </>
         )}
         {/* Chat input */}
-        {selectedProject && (
+        {viewingProject && (
           <ChatInput
             sessionId={selectedSession}
-            projectPath={projects?.find((p) => p.encoded_name === selectedProject)?.path ?? null}
+            projectPath={projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null}
             onMessageSent={(sid, msg) => {
               streamChunksRef.current = [];
               setStreamChunks([]);

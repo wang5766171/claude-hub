@@ -31,7 +31,7 @@ function TitleBar({ currentPage, onNavigate }: { currentPage: Page; onNavigate: 
   };
 
   return (
-    <div className="flex items-center h-10 border-b border-border/30 px-4" data-tauri-drag-region style={{ background: "var(--color-material-sidebar)", backdropFilter: "blur(20px)" }}>
+    <div className="flex items-center h-10 border-b border-border/30 px-4" data-tauri-drag-region style={{ background: "var(--color-layer-0)" }}>
       <div className="flex items-center gap-2 flex-1" data-tauri-drag-region>
         <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
           <MessageSquare className="h-3.5 w-3.5 text-primary" />
