@@ -66,6 +66,8 @@ pub struct AppState {
     pub language: Option<String>,
     pub always_on_top: Option<bool>,
     pub theme: Option<String>,
+    pub font_size_base: Option<String>,
+    pub font_size_prose: Option<String>,
 }
 
 fn state_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -115,6 +117,18 @@ pub fn load_last_project() -> Result<Option<String>, Box<dyn std::error::Error>>
 pub fn save_last_project(encoded_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut state = load_state().unwrap_or_default();
     state.last_project = Some(encoded_name.to_string());
+    save_state(&state)
+}
+
+pub fn load_font_sizes() -> Result<(Option<String>, Option<String>), Box<dyn std::error::Error>> {
+    let state = load_state()?;
+    Ok((state.font_size_base, state.font_size_prose))
+}
+
+pub fn save_font_sizes(base: &str, prose: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = load_state().unwrap_or_default();
+    state.font_size_base = Some(base.to_string());
+    state.font_size_prose = Some(prose.to_string());
     save_state(&state)
 }
 

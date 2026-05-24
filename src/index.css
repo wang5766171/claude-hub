@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@property --font-size-prose {
+  syntax: '<length>';
+  initial-value: 19px;
+  inherits: true;
+}
+
 @theme {
   /* macOS HIG Design Tokens */
   --radius-sm: 6px;
@@ -71,6 +77,10 @@
   --icon-theme: var(--color-muted-foreground);
   --icon-about: var(--color-muted-foreground);
   --icon-pin: var(--color-muted-foreground);
+
+  /* Font size presets (default: medium) */
+  --font-size-base: 19px;
+  --font-size-prose: 19px;
 }
 
 /* === Colorful theme === */
@@ -147,6 +157,10 @@
 }
 
 @layer base {
+  :root {
+    font-size: var(--font-size-base);
+    transition: font-size 300ms ease-out, --font-size-prose 300ms ease-out;
+  }
   * {
     border-color: var(--color-border);
   }
@@ -154,7 +168,6 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -184,7 +197,7 @@
 /* Markdown prose styles */
 .markdown-prose {
   line-height: 1.6;
-  font-size: 0.875rem;
+  font-size: var(--font-size-prose);
 }
 .markdown-prose p {
   margin: 0.5em 0;
@@ -320,7 +333,7 @@
   transition: all var(--transition-normal);
 }
 .transition-fast {
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 /* Sidebar tree animation */

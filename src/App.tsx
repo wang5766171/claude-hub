@@ -1,9 +1,10 @@
+
 import "@/i18n";
 import { ChatPage } from "@/pages/chat-page";
 import { ManagePage } from "@/pages/manage-page";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
-import { Pin, PinOff, Settings, Sun, Palette, Moon, Info } from "lucide-react";
+import { Pin, PinOff, Settings, Sun, Palette, Moon, Info, Type } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Github } from "@/components/icons/github";
 import { Gitee } from "@/components/icons/gitee";
@@ -11,6 +12,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme, type Theme } from "@/hooks/use-theme";
+import { useFontSize, type FontLevel } from "@/hooks/use-font-size";
 import type { Page, Project } from "@/types";
 
 const themeConfig: Record<Theme, { icon: typeof Sun; label: string }> = {
@@ -19,6 +21,37 @@ const themeConfig: Record<Theme, { icon: typeof Sun; label: string }> = {
   dark: { icon: Moon, label: "暗色" },
 };
 const themeOrder: Theme[] = ["light", "colorful", "dark"];
+
+const fontLevels: { id: FontLevel; labelKey: string }[] = [
+  { id: "s", labelKey: "fontSize.small" },
+  { id: "m", labelKey: "fontSize.medium" },
+  { id: "l", labelKey: "fontSize.large" },
+  { id: "xl", labelKey: "fontSize.xlarge" },
+];
+
+function FontSizeRow({ label, value, onChange, t }: { label: string; value: FontLevel; onChange: (v: FontLevel) => void; t: (k: string) => string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] text-muted-foreground w-14 shrink-0">{label}</span>
+      <div className="flex gap-1">
+        {fontLevels.map(({ id, labelKey }) => (
+          <button
+            key={id}
+            onClick={() => onChange(id)}
+            className={cn(
+              "px-2 py-0.5 rounded text-[11px] transition-fast",
+              value === id
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            )}
+          >
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function LoadingOverlay() {
   return (
@@ -38,8 +71,11 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
   const [version, setVersion] = useState("");
   const [aboutOpen, setAboutOpen] = useState(false);
   const [aboutHovered, setAboutHovered] = useState(false);
+  const [fontOpen, setFontOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { fontSizeBase, fontSizeProse, setFontSizeBase, setFontSizeProse } = useFontSize();
   const aboutRef = useRef<HTMLDivElement>(null);
+  const fontRef = useRef<HTMLDivElement>(null);
   const aboutTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -48,15 +84,18 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
   }, []);
 
   useEffect(() => {
-    if (!aboutOpen) return;
+    if (!aboutOpen && !fontOpen) return;
     const handler = (e: MouseEvent) => {
-      if (aboutRef.current && !aboutRef.current.contains(e.target as Node)) {
+      if (aboutOpen && aboutRef.current && !aboutRef.current.contains(e.target as Node)) {
         setAboutOpen(false);
+      }
+      if (fontOpen && fontRef.current && !fontRef.current.contains(e.target as Node)) {
+        setFontOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [aboutOpen]);
+  }, [aboutOpen, fontOpen]);
 
   const handleToggle = async () => {
     try {
@@ -108,6 +147,25 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
           <ThemeIcon className="h-3.5 w-3.5 text-[var(--icon-theme)]" />
           <span>{themeLabel}</span>
         </button>
+        <div className="relative" ref={fontRef}>
+          <button
+            onClick={() => setFontOpen(!fontOpen)}
+            className={cn(
+              "h-7 px-3 rounded-lg flex items-center gap-1.5 text-xs transition-fast text-muted-foreground hover:bg-accent/30 hover:text-foreground",
+              fontOpen && "bg-accent/30 text-foreground"
+            )}
+            title={t("fontSize.title")}
+          >
+            <Type className="h-3.5 w-3.5 text-[var(--icon-theme)]" />
+            <span>{t("fontSize.title")}</span>
+          </button>
+          {fontOpen && (
+            <div className="absolute left-0 top-full mt-1 w-64 rounded-lg border border-border bg-card shadow-lg z-50 p-3 space-y-2">
+              <FontSizeRow label={t("fontSize.ui")} value={fontSizeBase} onChange={setFontSizeBase} t={t} />
+              <FontSizeRow label={t("fontSize.prose")} value={fontSizeProse} onChange={setFontSizeProse} t={t} />
+            </div>
+          )}
+        </div>
         <div className="relative" ref={aboutRef}>
           <button
             onClick={() => setAboutOpen(!aboutOpen)}

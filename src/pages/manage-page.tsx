@@ -42,7 +42,7 @@ export function ManagePage({ onBack, onEnterProject }: ManagePageProps) {
             key={id}
             onClick={() => setActiveTab(id)}
             className={cn(
-              "flex flex-col items-center gap-1 w-12 py-2 rounded-lg text-[10px] transition-fast",
+              "flex flex-col items-center gap-1 w-12 py-2 rounded-lg text-xs transition-fast",
               activeTab === id
                 ? "bg-accent/80 text-accent-foreground font-medium"
                 : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"

@@ -188,6 +188,16 @@ fn save_last_project(encoded_name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn load_font_sizes() -> Result<(Option<String>, Option<String>), String> {
+    hub::load_font_sizes().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_font_sizes(font_size_base: String, font_size_prose: String) -> Result<(), String> {
+    hub::save_font_sizes(&font_size_base, &font_size_prose).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn list_custom_commands() -> Result<Vec<command::CustomCommand>, String> {
     command::list_custom_commands().map_err(|e| e.to_string())
 }
@@ -371,6 +381,8 @@ pub fn run() {
             load_last_project,
             open_url,
             save_last_project,
+            load_font_sizes,
+            save_font_sizes,
             list_custom_commands,
             save_custom_command,
             delete_custom_command,

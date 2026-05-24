@@ -258,5 +258,14 @@
     "title": "关于",
     "pin": "置顶",
     "unpin": "取消置顶"
+  },
+  "fontSize": {
+    "title": "字体",
+    "ui": "系统 UI",
+    "prose": "会话内容",
+    "small": "小",
+    "medium": "中",
+    "large": "大",
+    "xlarge": "特大"
   }
 }

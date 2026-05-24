@@ -258,5 +258,14 @@
     "title": "About",
     "pin": "Pin",
     "unpin": "Unpin"
+  },
+  "fontSize": {
+    "title": "Font",
+    "ui": "System UI",
+    "prose": "Content",
+    "small": "S",
+    "medium": "M",
+    "large": "L",
+    "xlarge": "XL"
   }
 }
