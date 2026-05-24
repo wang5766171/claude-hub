@@ -325,10 +325,16 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
       {/* Left sidebar: Session tree */}
       <div
         className={cn(
-          "flex flex-col border-r border-border/30 transition-all duration-300 ease-out shrink-0",
+          "flex flex-col transition-all duration-300 ease-out shrink-0",
           sidebarCollapsed ? "w-14" : "w-[240px]"
         )}
-        style={{ background: "var(--color-layer-2)" }}
+        style={{
+          background: "var(--color-layer-2)",
+          borderRight: "1px solid var(--color-border)",
+          boxShadow: "1px 0 0 0 var(--color-border), 4px 0 8px -2px rgba(0, 0, 0, 0.06)",
+          position: "relative",
+          zIndex: 11,
+        }}
       >
         {/* Sidebar header */}
         <div className="flex items-center gap-2 px-3 h-[44px]" style={{ background: "var(--color-layer-1)" }}>

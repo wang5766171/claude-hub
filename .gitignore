@@ -30,6 +30,7 @@ docs/superpowers/
 # Local screenshots
 *.png
 !src-tauri/icons/*.png
+!src/assets/*.png
 !docs/screenshots/*.png
 
 # Claude Code project config

@@ -4,7 +4,8 @@ import { ChatPage } from "@/pages/chat-page";
 import { ManagePage } from "@/pages/manage-page";
 import { useInvoke } from "@/hooks/use-invoke";
 import { useTranslation } from "react-i18next";
-import { Pin, PinOff, Settings, MessageSquare } from "lucide-react";
+import { Pin, PinOff, Settings } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState as useReactState } from "react";
@@ -33,9 +34,7 @@ function TitleBar({ currentPage, onNavigate }: { currentPage: Page; onNavigate: 
   return (
     <div className="flex items-center h-10 border-b border-border/30 px-4" data-tauri-drag-region style={{ background: "var(--color-layer-0)" }}>
       <div className="flex items-center gap-2 flex-1" data-tauri-drag-region>
-        <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-        </div>
+        <img src={logo} alt="Jishu Hub" className="h-5 w-5 rounded" />
         <span className="text-sm font-semibold" data-tauri-drag-region>Jishu Hub</span>
         {version && <span className="text-[10px] text-muted-foreground/50 font-mono">v{version}</span>}
       </div>
