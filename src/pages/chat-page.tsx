@@ -426,25 +426,25 @@ export function ChatPage({
           {currentProject ? (
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
               <FolderOpen className="h-5 w-5 shrink-0 ml-0.5 text-[var(--icon-folder)]" />
-              <span className="truncate text-sm font-semibold text-foreground flex-1 min-w-0" title={currentProject.name}>{currentProject.name}</span>
+              <span className="truncate text-sm font-semibold text-foreground flex-1 min-w-0 leading-none pt-[1px]" title={currentProject.name}>{currentProject.name}</span>
               <button
                 onClick={onSwitchProject}
                 className="shrink-0 px-1.5 flex items-center gap-0.5 rounded-md text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-fast"
                 title={t("sessions.switchProject")}
               >
-                <span>{t("sessions.switchProject")}</span>
+                <span className="leading-none pt-[1px]">{t("sessions.switchProject")}</span>
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
               <FolderOpen className="h-5 w-5 shrink-0 ml-0.5 text-muted-foreground/40" />
-              <span className="text-sm font-semibold text-muted-foreground">{t("sessions.noProject")}</span>
+              <span className="text-sm font-semibold text-muted-foreground leading-none pt-[1px]">{t("sessions.noProject")}</span>
               <button
                 onClick={onSwitchProject}
                 className="ml-auto px-1.5 flex items-center gap-0.5 rounded-md text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-fast"
               >
-                <span>{t("sessions.switchProject")}</span>
+                <span className="leading-none pt-[1px]">{t("sessions.switchProject")}</span>
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
@@ -460,7 +460,7 @@ export function ChatPage({
               )}
             >
               <SquarePen className="h-3.5 w-3.5 shrink-0 text-[var(--icon-action)]" />
-              <span className="truncate">发起新对话</span>
+              <span className="truncate leading-none pt-[1px]">发起新对话</span>
             </button>
             <button
               onClick={handleRefresh}
@@ -488,7 +488,7 @@ export function ChatPage({
                   setMsgSearchSeed(e.target.value);
                 }}
                 placeholder={t("sessions.search")}
-                className="h-8 pl-[1.9rem] pr-7 !text-sm shadow-none rounded-lg border-border/40 truncate"
+                className="h-8 pl-[1.9rem] pr-7 !text-sm !leading-none shadow-none rounded-lg border-border/40 truncate"
               />
               {searchQuery && (
                 <button
@@ -563,7 +563,7 @@ export function ChatPage({
                 )}
               >
                 <MessageSquare className="h-3 w-3 shrink-0 text-[var(--icon-message)]" />
-                <span className="truncate flex-1 text-left min-w-0">{name}</span>
+                <span className="truncate flex-1 text-left min-w-0 leading-none pt-[1px]">{name}</span>
                 {timeStr && (
                   <span className={cn(
                     "text-[10px] shrink-0 tabular-nums",
@@ -595,7 +595,7 @@ export function ChatPage({
                   onClick={onSwitchProject}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-primary hover:bg-primary/10 transition-fast font-medium"
                 >
-                  {t("sessions.switchProject")}
+                  <span className="leading-none pt-[1px]">{t("sessions.switchProject")}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>

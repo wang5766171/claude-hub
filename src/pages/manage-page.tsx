@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { ProjectsPage } from "./projects-page";
@@ -11,6 +11,7 @@ import type { ManageTab, Project } from "@/types";
 interface ManagePageProps {
   onBack: () => void;
   onEnterProject: (project: Project) => void;
+  navigateToProjects?: number;
 }
 
 const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string; iconColor: string }[] = [
@@ -20,9 +21,22 @@ const tabs: { id: ManageTab; icon: typeof FolderOpen; labelKey: string; iconColo
   { id: "backups", icon: Archive, labelKey: "config.backups", iconColor: "text-[var(--icon-folder)]" },
 ];
 
-export function ManagePage({ onBack, onEnterProject }: ManagePageProps) {
+export function ManagePage({ onBack, onEnterProject, navigateToProjects }: ManagePageProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ManageTab>("projects");
+  const prevNavRef = useRef(0);
+
+  useEffect(() => {
+    if (navigateToProjects && navigateToProjects !== prevNavRef.current) {
+      prevNavRef.current = navigateToProjects;
+      setActiveTab("projects");
+    }
+  }, [navigateToProjects]);
+
+  const handleBack = () => {
+    setActiveTab("projects");
+    onBack();
+  };
 
   return (
     <div className="flex h-full">
@@ -31,7 +45,7 @@ export function ManagePage({ onBack, onEnterProject }: ManagePageProps) {
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={onBack}
+          onClick={handleBack}
           className="mb-4 text-muted-foreground hover:text-foreground"
           title={t("sessions.title")}
         >

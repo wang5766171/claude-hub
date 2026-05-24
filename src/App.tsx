@@ -273,7 +273,10 @@ function App() {
     setCurrentPage("chat");
   }, []);
 
+  const [manageNavKey, setManageNavKey] = useState(0);
+
   const handleSwitchProject = useCallback(() => {
+    setManageNavKey(k => k + 1);
     setCurrentPage("manage");
   }, []);
 
@@ -282,7 +285,7 @@ function App() {
       <TitleBar currentPage={currentPage} onNavigate={setCurrentPage} disabled={loading} />
       <div className="flex-1 overflow-hidden">
         <div className={cn("h-full", currentPage !== "chat" && "hidden")}><ChatPage currentProject={currentProject} onRefresh={handleRefresh} sessionNames={sessionNames} refetchNames={refetchNames} onSwitchProject={handleSwitchProject} /></div>
-        <div className={cn("h-full", currentPage !== "manage" && "hidden")}><ManagePage onBack={() => setCurrentPage("chat")} onEnterProject={handleEnterProject} /></div>
+        <div className={cn("h-full", currentPage !== "manage" && "hidden")}><ManagePage onBack={() => setCurrentPage("chat")} onEnterProject={handleEnterProject} navigateToProjects={manageNavKey} /></div>
       </div>
       <div className="h-6 flex items-center px-4 text-[10px] text-muted-foreground/50 border-t border-border/30" data-tauri-drag-region>
         <span>{projects?.length ?? 0} projects</span>
