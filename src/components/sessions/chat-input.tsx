@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCommand } from "@/hooks/use-invoke";
 import { Button } from "@/components/ui/button";
@@ -21,18 +21,21 @@ interface ChatInputProps {
   onMessageSent?: (chatSessionId: string, userMessage: string) => void;
 }
 
-export function ChatInput({
+export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({
   sessionId,
   projectPath,
   disabled = false,
   onMessageSent,
-}: ChatInputProps) {
+}: ChatInputProps, ref) {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [images, setImages] = useState<AttachedImage[]>([]);
   const [sending, setSending] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(ref, () => textareaRef.current!, []);
 
   const placeholder =
     images.length === 0
@@ -197,6 +200,7 @@ export function ChatInput({
           <Paperclip className="h-4 w-4 text-[var(--icon-action)]" />
         </Button>
         <textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -229,4 +233,4 @@ export function ChatInput({
       </div>
     </div>
   );
-}
+});

@@ -76,7 +76,7 @@ function TitleBar({ currentPage, onNavigate, disabled }: { currentPage: Page; on
   const { fontSizeBase, fontSizeProse, setFontSizeBase, setFontSizeProse } = useFontSize();
   const aboutRef = useRef<HTMLDivElement>(null);
   const fontRef = useRef<HTMLDivElement>(null);
-  const aboutTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const aboutTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     invokeCommand<boolean>("load_always_on_top").then(setPinned).catch(console.error);
