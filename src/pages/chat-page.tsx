@@ -492,7 +492,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
             {/* Messages */}
             <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto">
               {selectedSession && (
-                <MessageView messages={sessionMessages} initialSearchQuery={msgSearchSeed} onRefresh={handleRefreshMessages} flat />
+                <MessageView messages={sessionMessages} initialSearchQuery={msgSearchSeed} onRefresh={handleRefreshMessages} flat scrollContainerRef={messageAreaRef} />
               )}
               {streamingActive && (
                 <StreamingMessage
