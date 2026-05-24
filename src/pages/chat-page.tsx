@@ -426,7 +426,7 @@ export function ChatPage({
         <div className={cn("flex flex-col", sidebarCollapsed && "hidden")} style={{ background: "var(--color-layer-1)" }}>
           {/* Project card */}
           {currentProject ? (
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-border/20">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
               <FolderOpen className="h-5 w-5 shrink-0 ml-2 text-[var(--icon-folder)]" />
               <span className="truncate text-sm font-semibold text-foreground flex-1 min-w-0 leading-none pt-[1px]" title={currentProject.name}>{currentProject.name}</span>
               <button
@@ -439,7 +439,7 @@ export function ChatPage({
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-border/20">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
               <FolderOpen className="h-5 w-5 shrink-0 ml-2 text-muted-foreground/40" />
               <span className="text-sm font-semibold text-muted-foreground leading-none pt-[1px]">{t("sessions.noProject")}</span>
               <button
