@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,7 +14,7 @@ interface StreamingMessageProps {
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function StreamingMessage({ chunks, isComplete, userMessage, scrollContainerRef }: StreamingMessageProps) {
+export const StreamingMessage = memo(function StreamingMessage({ chunks, isComplete, userMessage, scrollContainerRef }: StreamingMessageProps) {
   const { t } = useTranslation();
   const [displayText, setDisplayText] = useState("");
   const [toolUses, setToolUses] = useState<Array<{ name: string; input: unknown }>>([]);
@@ -159,7 +159,7 @@ export function StreamingMessage({ chunks, isComplete, userMessage, scrollContai
       </div>
     </div>
   );
-}
+});
 
 function StreamingToolBlock({ name, input }: { name: string; input: unknown }) {
   const { t } = useTranslation();

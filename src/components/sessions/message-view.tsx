@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useDeferredValue } from "react";
+import { useState, useMemo, useRef, useEffect, useDeferredValue, memo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -241,7 +241,7 @@ function renderBlock(block: ContentBlock, query: string, dark?: boolean, matchOf
   }
 }
 
-export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: MessageViewProps) {
+export const MessageView = memo(function MessageView({ messages, initialSearchQuery, onRefresh, flat }: MessageViewProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || "");
   const renderingQuery = useDeferredValue(searchQuery);
@@ -486,4 +486,4 @@ export function MessageView({ messages, initialSearchQuery, onRefresh, flat }: M
       </ScrollArea>
     </div>
   );
-}
+});

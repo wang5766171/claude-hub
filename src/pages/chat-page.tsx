@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useInvoke, invokeCommand } from "@/hooks/use-invoke";
 import { MessageView } from "@/components/sessions/message-view";
 import { RenameSessionDialog } from "@/components/sessions/rename-session-dialog";
@@ -203,7 +203,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
     }
   };
 
-  const handleRefreshMessages = async () => {
+  const handleRefreshMessages = useCallback(async () => {
     if (selectedSession && viewingProject) {
       try {
         const msgs = await invokeCommand<Message[]>("get_session_messages", {
@@ -215,7 +215,23 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
         console.error(e);
       }
     }
-  };
+  }, [selectedSession, viewingProject]);
+
+  const handleMessageSent = useCallback((sid: string, msg: string) => {
+    streamChunksRef.current = [];
+    setStreamChunks([]);
+    setStreamComplete(false);
+    setStreamingSession(sid);
+    setPendingUserMessage(msg);
+    if (!selectedSession) {
+      setSelectedSession(sid);
+    }
+    requestAnimationFrame(() => {
+      if (messageAreaRef.current) {
+        messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+      }
+    });
+  }, [selectedSession]);
 
   // Stream listener
   useEffect(() => {
@@ -494,21 +510,7 @@ export function ChatPage({ onOpenManage }: { onOpenManage: () => void }) {
           <ChatInput
             sessionId={selectedSession}
             projectPath={projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null}
-            onMessageSent={(sid, msg) => {
-              streamChunksRef.current = [];
-              setStreamChunks([]);
-              setStreamComplete(false);
-              setStreamingSession(sid);
-              setPendingUserMessage(msg);
-              if (!selectedSession) {
-                setSelectedSession(sid);
-              }
-              requestAnimationFrame(() => {
-                if (messageAreaRef.current) {
-                  messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
-                }
-              });
-            }}
+            onMessageSent={handleMessageSent}
           />
         )}
       </div>
