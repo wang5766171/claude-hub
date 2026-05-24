@@ -86,6 +86,7 @@
     "stop": "Stop",
     "attachImage": "Attach image",
     "newSession": "New session",
+    "refresh": "Refresh list",
     "openTerminal": "Open terminal",
     "resuming": "Opening terminal...",
     "toolCalls": "Tool Calls ({{count}})",
