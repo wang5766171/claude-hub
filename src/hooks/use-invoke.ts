@@ -5,31 +5,33 @@ interface UseInvokeResult<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
-  refetch: () => void;
+  refetch: () => Promise<T>;
 }
 
-export function useInvoke<T>(command: string, args?: Record<string, unknown>): UseInvokeResult<T> {
+export function useInvoke<T>(command: string, args?: Record<string, unknown>, refreshKey?: number): UseInvokeResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(() => {
+  const fetch = useCallback((): Promise<T> => {
     setLoading(true);
     setError(null);
-    invoke<T>(command, args)
+    return invoke<T>(command, args)
       .then((result) => {
         setData(result);
         setLoading(false);
+        return result;
       })
       .catch((err) => {
         setError(String(err));
         setLoading(false);
+        throw err;
       });
   }, [command, JSON.stringify(args)]);
 
   useEffect(() => {
     fetch();
-  }, [fetch]);
+  }, [fetch, refreshKey]);
 
   return { data, loading, error, refetch: fetch };
 }
