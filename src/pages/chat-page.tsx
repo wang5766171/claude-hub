@@ -7,7 +7,7 @@ import { StreamingMessage } from "@/components/sessions/streaming-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  MessageSquare, Search, X, Pencil,
+  MessageSquare, Search, X, Pencil, RotateCw,
   ChevronDown, ChevronRight as ChevRight, FolderOpen, SquarePen, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -43,62 +43,55 @@ function formatRelativeTime(date: Date | string): string {
   return `${mm}-${dd} ${hh}:${mi}`;
 }
 
-const NEW_CHAT_KEY = "__new_chat__";
-
 function ProjectSessionGroup({
   project,
   isCollapsed,
   selectedSessionId,
   sessionNames,
   onSelectSession,
-  newChatActive,
+  newChatInfo,
+  refreshKey,
 }: {
   project: Project;
   isCollapsed: boolean;
   selectedSessionId: string | null;
   sessionNames: Record<string, string> | null | undefined;
   onSelectSession: (sessionId: string, projectName: string) => void;
-  newChatActive?: boolean;
+  newChatInfo?: { sessionId: string; realId?: string; displayName: string } | null;
   refreshKey?: number;
 }) {
-  const { data: sessions, refetch: refetchSessions } = useInvoke<Session[]>(
+  const { data: sessions } = useInvoke<Session[]>(
     "list_sessions",
-    { encodedName: project.encoded_name }
+    { encodedName: project.encoded_name },
+    refreshKey,
   );
-
-  // Refresh session list when refreshKey changes (new session created)
-  useEffect(() => {
-    if (refreshKey && refreshKey > 0) refetchSessions();
-  }, [refreshKey, refetchSessions]);
 
   if (!sessions || !sessionNames) return null;
 
-  const hasRealSession = newChatActive && selectedSessionId && sessions.some(s => s.id === selectedSessionId);
-
-  // Build display list: if new chat active and real session not yet in list, prepend synthetic entry
-  let displaySessions: Session[];
-  if (newChatActive && !hasRealSession) {
-    const synthetic: Session = {
-      id: selectedSessionId || "__new__",
-      path: "",
-      messages: [],
-      display_name: "新对话",
-      started_at: new Date().toISOString(),
-      last_active: null,
-    };
-    displaySessions = [synthetic, ...sessions];
-  } else {
-    displaySessions = sessions;
+  // Inject fake session into the list if it belongs to this project and isn't already present
+  let displaySessions = sessions;
+  if (newChatInfo) {
+    const effectiveId = newChatInfo.realId || newChatInfo.sessionId;
+    const alreadyExists = sessions.some(s => s.id === effectiveId);
+    if (!alreadyExists) {
+      const fakeSession: Session = {
+        id: effectiveId,
+        path: "",
+        messages: [],
+        display_name: newChatInfo.displayName,
+        started_at: new Date().toISOString(),
+        last_active: new Date().toISOString(),
+      };
+      displaySessions = [fakeSession, ...sessions];
+    }
   }
 
   return (
     <div className={isCollapsed ? "hidden" : ""}>
-      {displaySessions.map((session, index) => {
-        const isTheNewOne = newChatActive && (session.id === selectedSessionId || (!selectedSessionId && index === 0));
-        const isActive = isTheNewOne || selectedSessionId === session.id;
-        const name = isTheNewOne
-          ? (sessionNames?.[session.id] || session.display_name || "新对话")
-          : (sessionNames[session.id] || session.display_name || session.id.slice(0, 8));
+      {displaySessions.map((session) => {
+        const isFake = !!(newChatInfo && (session.id === newChatInfo.sessionId || session.id === newChatInfo.realId));
+        const isActive = selectedSessionId === session.id || (isFake && selectedSessionId === newChatInfo?.realId);
+        const name = sessionNames[session.id] || session.display_name || session.id.slice(0, 8);
         const timeStr = session.last_active
           ? formatRelativeTime(session.last_active)
           : session.started_at
@@ -106,7 +99,7 @@ function ProjectSessionGroup({
             : null;
         return (
           <button
-            key={isTheNewOne ? NEW_CHAT_KEY : session.id}
+            key={isFake ? "__new_chat__" : session.id}
             onClick={() => onSelectSession(session.id, project.encoded_name)}
             className={cn(
               "flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] transition-fast",
@@ -130,10 +123,21 @@ function ProjectSessionGroup({
   );
 }
 
-export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => void }) {
+export function ChatPage({
+  onOpenManage: _onOpenManage,
+  onRefresh,
+  projects: projectsFromApp,
+  sessionNames,
+  refetchNames,
+}: {
+  onOpenManage: () => void;
+  onRefresh: () => Promise<number>;
+  projects: Project[] | null;
+  sessionNames: Record<string, string> | null;
+  refetchNames: () => Promise<Record<string, string>>;
+}) {
   const { t } = useTranslation();
-  const { data: projects, loading: projectsLoading } = useInvoke<Project[]>("scan_projects");
-  const { data: sessionNames, refetch: refetchNames } = useInvoke<Record<string, string>>("get_session_names");
+  const projects = projectsFromApp;
 
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -151,14 +155,16 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   const [msgSearchSeed, setMsgSearchSeed] = useState("");
   const [viewingProject, setViewingProject] = useState<string | null>(null);
   const [newChatPath, setNewChatPath] = useState<string | null>(null);
-  const [isNewChat, setIsNewChat] = useState(false);
-  const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0);
+  // New chat tracking: a single object that persists across the entire new chat lifecycle
+  // null = no new chat; { projectId, sessionId, displayName } = active new chat
+  const [newChatInfo, setNewChatInfo] = useState<{ projectId: string; sessionId: string; realId?: string; displayName: string } | null>(null);
+  const appDirRef = useRef<string | null>(null);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const streamChunksRef = useRef<StreamChunk[]>([]);
   const pendingUserMsgRef = useRef<string | null>(null);
   const visitedSessions = useRef(new Set<string>());
   const scrollMemory = useRef(new Map<string, number>());
-  const scrollAction = useRef<{ type: "bottom" } | { type: "restore"; top: number } | null>(null);
+  const scrollAction = useRef<{ type: "bottom" } | { type: "restore", top: number } | null>(null);
   const streamingActive = streamingSession || streamComplete;
 
   // Default: collapse all projects
@@ -167,6 +173,12 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
       setCollapsedProjects(new Set(projects.filter(p => p.session_count > 0).map(p => p.encoded_name)));
     }
   }, [projects]);
+
+  const [listRefreshKey, setListRefreshKey] = useState(0);
+  const handleRefresh = async () => {
+    const newKey = await onRefresh();
+    setListRefreshKey(newKey);
+  };
 
   useLayoutEffect(() => {
     if (!scrollAction.current || !messageAreaRef.current) return;
@@ -180,11 +192,11 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   }, [sessionMessages]);
 
   const handleSelectSession = async (sessionId: string, projectName?: string) => {
+    if (sessionId === selectedSession) return;
     const targetProject = projectName || selectedProject;
     if (!targetProject) return;
 
     setNewChatPath(null);
-    setIsNewChat(false);
 
     if (selectedSession && messageAreaRef.current) {
       scrollMemory.current.set(selectedSession, messageAreaRef.current.scrollTop);
@@ -195,11 +207,21 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setViewingProject(targetProject);
     setMsgSearchSeed(activeSearchQuery);
 
-    const messages = await invokeCommand<Message[]>("get_session_messages", {
-      sessionId,
-      encodedName: targetProject,
-    });
-    setSessionMessages(messages);
+    // Fake sessions don't have backend data
+    if (sessionId.startsWith("new_session_")) {
+      setSessionMessages([]);
+      return;
+    }
+
+    try {
+      const messages = await invokeCommand<Message[]>("get_session_messages", {
+        sessionId,
+        encodedName: targetProject,
+      });
+      setSessionMessages(messages);
+    } catch {
+      setSessionMessages([]);
+    }
 
     if (isFirstVisit) {
       scrollAction.current = { type: "bottom" };
@@ -213,7 +235,6 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
   };
 
   const handleNewSession = async () => {
-    setSelectedSession(null);
     setSessionMessages([]);
     setStreamChunks([]);
     setStreamComplete(false);
@@ -221,27 +242,32 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setPendingUserMessage(null);
     pendingUserMsgRef.current = null;
     setMsgSearchSeed("");
-    setIsNewChat(true);
 
-    if (viewingProject) {
-      const project = projects?.find((p) => p.encoded_name === viewingProject);
-      if (project) {
-        setNewChatPath(null);
-        setCollapsedProjects(prev => {
-          const next = new Set(prev);
-          next.delete(viewingProject);
-          return next;
-        });
+    let projectId = viewingProject;
+    if (!projectId) {
+      try {
+        const appDir = await invokeCommand<string>("get_app_dir");
+        setNewChatPath(appDir);
+        appDirRef.current = appDir;
+        projectId = "__app_dir__";
+      } catch (err) {
+        console.error("Failed to get app dir:", err);
         return;
       }
+    } else {
+      setNewChatPath(null);
+      setCollapsedProjects(prev => {
+        const next = new Set(prev);
+        next.delete(viewingProject!);
+        return next;
+      });
     }
 
-    try {
-      const appDir = await invokeCommand<string>("get_app_dir");
-      setNewChatPath(appDir);
-    } catch (err) {
-      console.error("Failed to get app dir:", err);
-    }
+    const fakeSessionId = `new_session_${Date.now()}`;
+    setSelectedSession(fakeSessionId);
+    setSelectedProject(projectId);
+    setViewingProject(projectId);
+    setNewChatInfo({ projectId, sessionId: fakeSessionId, realId: undefined, displayName: "新对话" });
   };
 
   const handleResumeSession = async (sessionId: string) => {
@@ -294,15 +320,14 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     setStreamingSession(sid);
     setPendingUserMessage(msg);
     pendingUserMsgRef.current = msg;
-    if (!selectedSession || selectedSession === "__new__") {
-      setSelectedSession(sid);
-    }
+    // Don't change selectedSession - keep the current ID for sidebar display
+    // streamingSession (pending-xxx) tracks the actual stream
     requestAnimationFrame(() => {
       if (messageAreaRef.current) {
         messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
       }
     });
-  }, [selectedSession]);
+  }, []);
 
   // Stream listener
   useEffect(() => {
@@ -352,11 +377,12 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           setPendingUserMessage(null);
           pendingUserMsgRef.current = null;
 
-          // Extract real session_id from result and update selection
+          // Extract real session_id and update selectedSession
           const realSessionId = (chunk.data as Record<string, unknown>)?.session_id as string | undefined;
           if (realSessionId && realSessionId !== chunk.session_id) {
             setSelectedSession(realSessionId);
-            setSessionsRefreshKey(k => k + 1);
+            visitedSessions.current.add(realSessionId);
+            setNewChatInfo(prev => prev ? { ...prev, realId: realSessionId } : null);
           }
 
           requestAnimationFrame(() => {
@@ -387,16 +413,22 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
     viewingProject ? { encodedName: viewingProject } : undefined
   );
   const currentSession = viewingSessions?.find((s) => s.id === selectedSession);
+  const isNewChatSession = newChatInfo && (selectedSession === newChatInfo.sessionId || selectedSession === newChatInfo.realId);
   const displayName = selectedSession
-    ? (sessionNames?.[selectedSession] || currentSession?.display_name || selectedSession.slice(0, 8))
+    ? (isNewChatSession
+        ? newChatInfo.displayName
+        : (sessionNames?.[selectedSession] || currentSession?.display_name || selectedSession.slice(0, 8)))
     : "";
 
-  if (projectsLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-sm text-muted-foreground animate-pulse">Loading...</div>
-      </div>
-    );
+  // Derive new chat display name from session names when available
+  useEffect(() => {
+    if (newChatInfo?.realId && sessionNames?.[newChatInfo.realId]) {
+      setNewChatInfo(prev => prev ? { ...prev, displayName: sessionNames[newChatInfo.realId!]! } : null);
+    }
+  }, [sessionNames, newChatInfo?.realId]);
+
+  if (!projects) {
+    return null;
   }
 
   return (
@@ -425,6 +457,13 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
             >
               <SquarePen className="h-3.5 w-3.5 shrink-0 text-[var(--icon-action)]" />
               <span className="truncate">发起新对话</span>
+            </button>
+            <button
+              onClick={handleRefresh}
+              title={t("sessions.refresh")}
+              className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent/50 transition-fast text-muted-foreground hover:text-foreground"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setSidebarCollapsed(true)}
@@ -510,12 +549,28 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
                   selectedSessionId={selectedSession}
                   sessionNames={sessionNames}
                   onSelectSession={handleSelectSession}
-                  newChatActive={isNewChat && viewingProject === project.encoded_name}
-                  refreshKey={sessionsRefreshKey}
+                  newChatInfo={newChatInfo?.projectId === project.encoded_name ? newChatInfo : null}
+                  refreshKey={listRefreshKey}
                 />
               </div>
             );
           })}
+          {/* Standalone fake session for new chat without a real project */}
+          {newChatInfo?.projectId === "__app_dir__" && (
+            <button
+              onClick={() => handleSelectSession(newChatInfo.realId || newChatInfo.sessionId, "__app_dir__")}
+              className={cn(
+                "flex w-full items-center gap-2 pl-8 pr-2 py-1.5 text-[12px] transition-fast",
+                (selectedSession === newChatInfo.realId || selectedSession === newChatInfo.sessionId)
+                  ? "bg-primary/10 text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+              )}
+            >
+              <MessageSquare className="h-3 w-3 shrink-0 text-[var(--icon-message)]" />
+              <span className="truncate flex-1 text-left min-w-0">{newChatInfo.displayName}</span>
+              <span className="text-[10px] text-muted-foreground/40 shrink-0">刚刚</span>
+            </button>
+          )}
         </div>
 
         {/* Collapsed: empty body area */}
@@ -524,7 +579,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
 
       {/* Right: Chat area */}
       <div className="flex-1 flex flex-col min-w-0 bg-background">
-        {!selectedSession && !streamingActive && !isNewChat ? (
+        {!selectedSession && !streamingActive && !newChatInfo ? (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
             <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
               <MessageSquare className="h-7 w-7 text-[var(--icon-message)]" />
@@ -534,7 +589,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
         ) : (
           <>
             {/* Session header */}
-            {selectedSession && selectedSession !== "__new__" && currentSession ? (
+            {selectedSession && !selectedSession.startsWith("new_session_") ? (
               <div className="flex items-center justify-between px-5 h-[44px] border-b border-border/30" style={{ background: "var(--color-layer-1)" }}>
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{displayName}</span>
@@ -562,7 +617,7 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
             )}
             {/* Messages */}
             <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto">
-              {selectedSession && selectedSession !== "__new__" && (
+              {selectedSession && (
                 <MessageView messages={sessionMessages} initialSearchQuery={msgSearchSeed} onRefresh={handleRefreshMessages} flat scrollContainerRef={messageAreaRef} />
               )}
               {streamingActive && (
@@ -577,10 +632,10 @@ export function ChatPage({ onOpenManage: _onOpenManage }: { onOpenManage: () => 
           </>
         )}
         {/* Chat input */}
-        {(viewingProject || newChatPath || isNewChat) && (
+        {(viewingProject || newChatPath || newChatInfo) && (
           <ChatInput
-            sessionId={selectedSession}
-            projectPath={viewingProject ? (projects?.find((p) => p.encoded_name === viewingProject)?.path ?? null) : newChatPath}
+            sessionId={selectedSession?.startsWith("new_session_") ? null : selectedSession}
+            projectPath={projects?.find((p) => p.encoded_name === viewingProject)?.path ?? appDirRef.current ?? null}
             onMessageSent={handleMessageSent}
           />
         )}
